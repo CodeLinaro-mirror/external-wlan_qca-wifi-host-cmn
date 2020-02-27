@@ -1822,6 +1822,8 @@ void hal_srng_src_hw_init_generic(struct hal_soc *hal,
 {
 	uint32_t reg_val = 0;
 	uint64_t tp_addr = 0;
+	uint32_t temp = 0;
+	int i;
 
 	hal_debug("hw_init srng %d", srng->ring_id);
 
@@ -1838,6 +1840,15 @@ void hal_srng_src_hw_init_generic(struct hal_soc *hal,
 
 	SRNG_SRC_REG_WRITE(srng, BASE_LSB, srng->ring_base_paddr & 0xffffffff);
 	hal_wbm_idle_lsb_write_confirm(srng);
+
+	for (i=0; i<5; i++) {
+		temp = SRNG_SRC_REG_READ(srng, BASE_LSB);
+		if (temp == 0)
+			SRNG_SRC_REG_WRITE(srng, BASE_LSB,
+			    srng->ring_base_paddr & 0xffffffff);
+		else
+			break;
+	}
 
 	reg_val = SRNG_SM(SRNG_SRC_FLD(BASE_MSB, RING_BASE_ADDR_MSB),
 		((uint64_t)(srng->ring_base_paddr) >> 32)) |
