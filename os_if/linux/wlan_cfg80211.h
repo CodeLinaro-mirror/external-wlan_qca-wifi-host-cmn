@@ -72,6 +72,15 @@
 	.doit = NULL							\
 },
 
+/* For kernel version >= 5.2, driver needs to provide policy */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0))
+#define vendor_command_policy(__policy, __maxattr) \
+	.policy = __policy,                        \
+	.maxattr = __maxattr
+#else
+#define vendor_command_policy(__policy, __maxattr)
+#endif /*End of (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0) */
+
 #undef nla_parse
 #undef nla_parse_nested
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
