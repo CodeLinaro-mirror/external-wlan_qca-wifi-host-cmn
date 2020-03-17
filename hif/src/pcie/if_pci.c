@@ -3492,6 +3492,14 @@ static int hif_ce_msi_configure_irq(struct hif_softc *scn)
 	struct CE_attr *host_ce_conf = ce_sc->host_ce_config;
 
 	if (!scn->disable_wake_irq) {
+#ifndef WLAN_ONE_MSI_VECTOR
+		/*
+		 * if use single MSI vector, disable wake IRQ should
+		 * be better. Otherwise, as it uses shared IRQ, then
+		 * it needs more other information to determine which
+		 * interrupt happens. Besides, these information may
+		 * not easy to acquire currently.
+		 */
 		/* do wake irq assignment */
 		ret = pld_get_user_msi_assignment(scn->qdf_dev->dev, "WAKE",
 						  &msi_data_count,
@@ -3509,6 +3517,7 @@ static int hif_ce_msi_configure_irq(struct hif_softc *scn)
 
 		if (ret)
 			return ret;
+#endif
 	}
 
 	/* do ce irq assignments */
@@ -3548,6 +3557,10 @@ static int hif_ce_msi_configure_irq(struct hif_softc *scn)
 		pci_sc->ce_msi_irq_num[ce_id] = irq;
 		ret = pfrm_request_irq(scn->qdf_dev->dev,
 				       irq, hif_ce_interrupt_handler,
+#ifdef WLAN_ONE_MSI_VECTOR
+		/* Avoid warning when request shared IRQ */
+				       IRQF_NO_SUSPEND |
+#endif
 				       IRQF_SHARED,
 				       ce_name[ce_id],
 				       &ce_sc->tasklets[ce_id]);

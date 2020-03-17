@@ -1169,6 +1169,7 @@ static void dp_srng_msi_setup(struct dp_soc *soc, struct hal_srng_params
 		return;
 	}
 
+#ifndef WLAN_ONE_MSI_VECTOR
 	if (msi_group_number > msi_data_count) {
 		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_WARN,
 			FL("2 msi_groups will share an msi; msi_group_num %d"),
@@ -1176,6 +1177,7 @@ static void dp_srng_msi_setup(struct dp_soc *soc, struct hal_srng_params
 
 		QDF_ASSERT(0);
 	}
+#endif
 
 	pld_get_msi_address(soc->osdev->dev, &addr_low, &addr_high);
 
