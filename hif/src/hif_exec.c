@@ -517,6 +517,8 @@ static void hif_exec_tasklet_fn(unsigned long data)
 
 	if (hif_ext_group->work_complete(hif_ext_group, work_done)) {
 		qdf_atomic_dec(&(scn->active_grp_tasklet_cnt));
+		/* semaphore release must before irq_enable */
+		qdf_semaphore_release(&hif_ext_group->tasklet_sem);
 		hif_ext_group->irq_enable(hif_ext_group);
 	} else {
 		hif_exec_tasklet_schedule(hif_ext_group);
@@ -625,6 +627,8 @@ static int hif_exec_poll(struct napi_struct *napi, int budget)
 	if (!hif_ext_group->force_break && work_done < normalized_budget) {
 		napi_complete(napi);
 		qdf_atomic_dec(&scn->active_grp_tasklet_cnt);
+		/* semaphore release must before irq_enable */
+		qdf_semaphore_release(&hif_ext_group->tasklet_sem);
 		hif_ext_group->irq_enable(hif_ext_group);
 		hif_ext_group->stats[cpu].napi_completes++;
 	} else {
@@ -665,6 +669,16 @@ static void hif_exec_napi_kill(struct hif_exec_context *ctx)
 {
 	struct hif_napi_exec_context *n_ctx = hif_exec_get_napi(ctx);
 	int irq_ind;
+
+	/*
+	 * Only allow napi_kill enter once per ctx
+	 * and set a tasklet deleted/deleting flag
+	 */
+	if (atomic_add_unless(&ctx->tasklet_deleted, 1, 1) == 0)
+		return;
+
+	/* wait semaphore release, if there is potential napi task pending */
+	qdf_semaphore_acquire(&ctx->tasklet_sem);
 
 	if (ctx->inited) {
 		napi_disable(&n_ctx->napi);
@@ -723,6 +737,16 @@ static void hif_exec_tasklet_kill(struct hif_exec_context *ctx)
 {
 	struct hif_tasklet_exec_context *t_ctx = hif_exec_get_tasklet(ctx);
 	int irq_ind;
+
+	/*
+	 * Only allow napi_kill enter once per ctx
+	 * and set a tasklet deleted/deleting flag
+	 */
+	if (atomic_add_unless(&ctx->tasklet_deleted, 1, 1) == 0)
+		return;
+
+	/* wait semaphore release, if there is potential tasklet pending */
+	qdf_semaphore_acquire(&ctx->tasklet_sem);
 
 	if (ctx->inited) {
 		tasklet_disable(&t_ctx->tasklet);
@@ -891,8 +915,30 @@ irqreturn_t hif_ext_group_interrupt_handler(int irq, void *context)
 {
 	struct hif_exec_context *hif_ext_group = context;
 	struct hif_softc *scn = HIF_GET_SOFTC(hif_ext_group->hif);
+	int sem_ret;
 
 	if (hif_ext_group->irq_requested) {
+		sem_ret = qdf_semaphore_acquire_trylock(
+				&hif_ext_group->tasklet_sem);
+
+		if (atomic_read(&hif_ext_group->tasklet_deleted)) {
+			/*
+			 * Task is in deleting or deleted, if semaphore
+			 * take success, then release semaphore,
+			 * otherwise, indicate the sempahore taken by
+			 * .kill() or previous interrupt handler(actually,
+			 * this scenario won't happen with current design),
+			 * do not release semaphore, make .kill() wait
+			 * potential napi task release semaphore.
+			 *
+			 */
+			if (sem_ret == 0)
+				qdf_semaphore_release(
+						&hif_ext_group->tasklet_sem);
+
+			return IRQ_HANDLED;
+		}
+
 		hif_latency_profile_start(hif_ext_group);
 
 		hif_record_event(hif_ext_group->hif, hif_ext_group->grp_id,
@@ -994,6 +1040,9 @@ QDF_STATUS hif_register_ext_group(struct hif_opaque_softc *hif_ctx,
 	hif_ext_group->hif = hif_ctx;
 	hif_ext_group->context_name = context_name;
 	hif_ext_group->type = type;
+	atomic_set(&hif_ext_group->tasklet_deleted, 0);
+
+	qdf_semaphore_init(&hif_ext_group->tasklet_sem);
 
 	hif_state->hif_num_extgroup++;
 	return QDF_STATUS_SUCCESS;

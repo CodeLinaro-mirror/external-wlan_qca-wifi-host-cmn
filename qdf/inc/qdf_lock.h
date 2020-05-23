@@ -544,6 +544,18 @@ QDF_STATUS __qdf_wake_lock_create(qdf_wake_lock_t *lock, const char *name,
 #define qdf_wake_lock_create(lock, name) \
 	__qdf_wake_lock_create(lock, name, __func__, __LINE__)
 
+/**
+ * qdf_semaphore_acquire_trylock - Try to take the semaphore,
+ * can be calld in ISR context
+ * @osdev: OS Device
+ * @m: mutex to take
+ * Return: int
+ */
+static inline int qdf_semaphore_acquire_trylock(qdf_semaphore_t *m)
+{
+	return __qdf_semaphore_acquire_trylock(m);
+}
+
 QDF_STATUS qdf_wake_lock_acquire(qdf_wake_lock_t *lock, uint32_t reason);
 
 const char *qdf_wake_lock_name(qdf_wake_lock_t *lock);
