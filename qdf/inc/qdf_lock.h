@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2020 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -480,6 +480,18 @@ static inline void qdf_semaphore_release(qdf_semaphore_t *m)
 static inline int qdf_semaphore_acquire_intr(qdf_semaphore_t *m)
 {
 	return __qdf_semaphore_acquire_intr(m);
+}
+
+/**
+ * qdf_semaphore_acquire_trylock - Try to take the semaphore,
+ * can be calld in ISR context
+ * @osdev: OS Device
+ * @m: mutex to take
+ * Return: int
+ */
+static inline int qdf_semaphore_acquire_trylock(qdf_semaphore_t *m)
+{
+	return __qdf_semaphore_acquire_trylock(m);
 }
 
 QDF_STATUS qdf_wake_lock_create(qdf_wake_lock_t *lock, const char *name);

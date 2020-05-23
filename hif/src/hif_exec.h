@@ -112,6 +112,8 @@ struct hif_exec_context {
 	/* Stores the affinity hint mask for each WLAN IRQ */
 	qdf_cpu_mask new_cpu_mask[HIF_MAX_GRP_IRQ];
 #endif
+	atomic_t tasklet_deleted;
+	qdf_semaphore_t tasklet_sem;
 };
 
 /**
