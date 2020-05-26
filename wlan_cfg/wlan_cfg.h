@@ -282,6 +282,8 @@ struct wlan_cfg_dp_soc_ctxt {
 	uint8_t is_rx_fisa_enabled;
 	bool is_tso_desc_attach_defer;
 	uint32_t delayed_replenish_entries;
+	uint32_t rx_pending_high_threshold;
+	uint32_t rx_pending_low_threshold;
 };
 
 /**
@@ -856,6 +858,24 @@ wlan_cfg_get_dma_mon_desc_ring_size(struct wlan_cfg_dp_pdev_ctxt *cfg);
  */
 int wlan_cfg_get_rx_dma_buf_ring_size(
 		struct wlan_cfg_dp_pdev_ctxt *wlan_cfg_pdev_ctx);
+
+/*
+ * wlan_cfg_rx_pending_hl_threshold() - Return high threshold of rx pending
+ * @wlan_cfg_pdev_ctx
+ *
+ * Return: rx_pending_high_threshold
+ */
+uint32_t
+wlan_cfg_rx_pending_hl_threshold(struct wlan_cfg_dp_soc_ctxt *cfg);
+
+/*
+ * wlan_cfg_rx_pending_lo_threshold() - Return low threshold of rx pending
+ * @wlan_cfg_pdev_ctx
+ *
+ * Return: rx_pending_low_threshold
+ */
+uint32_t
+wlan_cfg_rx_pending_lo_threshold(struct wlan_cfg_dp_soc_ctxt *cfg);
 
 /*
  * wlan_cfg_get_num_mac_rings() - Return the number of MAC RX DMA rings

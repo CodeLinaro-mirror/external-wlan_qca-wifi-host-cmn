@@ -1284,4 +1284,29 @@ static inline void dp_rx_wbm_sg_list_deinit(struct dp_soc *soc)
 		dp_rx_wbm_sg_list_reset(soc);
 	}
 }
+
+/*
+ * dp_set_rx_pending_flag() - Set RX Pending flag
+ * @dp_soc - DP soc structure pointer
+ * @set_val - Value of RX pending flag
+ *
+ * Return - None
+ */
+static inline
+void dp_set_rx_pending_flag(struct dp_soc *dp_soc, bool set_val)
+{
+	dp_soc->is_rx_pending = set_val;
+}
+
+/*
+ * dp_set_rx_pending_flag() - Get RX Pending flag
+ * @dp_soc - DP soc structure pointer
+ *
+ * Return - Rx Pending flag
+ */
+static inline
+bool dp_get_rx_pending_flag(struct dp_soc *dp_soc)
+{
+	return dp_soc->is_rx_pending;
+}
 #endif /* _DP_RX_H */

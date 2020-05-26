@@ -786,6 +786,8 @@ struct dp_soc_stats {
 		uint32_t near_full;
 		/* Break ring reaping as not all scattered msdu received */
 		uint32_t msdu_scatter_wait_break;
+		/* Drop Rx packet as pending too much */
+		uint32_t pending_drop;
 
 		struct {
 			/* Invalid RBM error count */
@@ -1336,6 +1338,8 @@ struct dp_soc {
 		qdf_nbuf_t wbm_sg_nbuf_tail;
 		uint32_t wbm_sg_desc_msdu_len;
 	} wbm_sg_param;
+	/* wheather there are lots of RX packets pending */
+	bool is_rx_pending;
 };
 
 #ifdef IPA_OFFLOAD

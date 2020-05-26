@@ -6396,6 +6396,9 @@ dp_print_soc_rx_stats(struct dp_soc *soc)
 	DP_PRINT_STATS("Rx err msdu rejected: %d",
 		       soc->stats.rx.err.rejected);
 
+	DP_PRINT_STATS("RX pending drop: %d",
+		       soc->stats.rx.pending_drop);
+
 	for (i = 0; i < HAL_RXDMA_ERR_MAX; i++) {
 		index += qdf_snprint(&rxdma_error[index],
 				DP_RXDMA_ERR_LENGTH - index,

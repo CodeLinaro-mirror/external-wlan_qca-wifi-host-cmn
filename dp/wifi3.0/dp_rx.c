@@ -2208,6 +2208,12 @@ done:
 	nbuf = nbuf_head;
 	while (nbuf) {
 		next = nbuf->next;
+		if (unlikely(dp_get_rx_pending_flag(soc))) {
+			qdf_nbuf_free(nbuf);
+			nbuf = next;
+			DP_STATS_INC(soc, rx.pending_drop, 1);
+			continue;
+		}
 		rx_tlv_hdr = qdf_nbuf_data(nbuf);
 		vdev_id = QDF_NBUF_CB_RX_VDEV_ID(nbuf);
 
