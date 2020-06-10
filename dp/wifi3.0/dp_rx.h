@@ -703,16 +703,94 @@ void dp_2k_jump_handle(struct dp_soc *soc, qdf_nbuf_t nbuf, uint8_t *rx_tlv_hdr,
 		qdf_nbuf_set_next((ptail), NULL);                     \
 	} while (0)
 
+#if defined(QCA_PADDR_CHECK_ON_3TH_PLATFORM)
+#define MAX_RETRY 50
+static inline
+int dp_check_paddr(struct dp_soc *dp_soc,
+				   qdf_nbuf_t *rx_netbuf,
+				   qdf_dma_addr_t *paddr,
+				   struct rx_desc_pool *rx_desc_pool)
+{
+	uint32_t nbuf_retry = 0;
+	int32_t ret;
+	const uint32_t phy_addr_reserved = 0x2000;
+	/*
+	 * on some third-party platform, the memory below 0x2000
+	 * is reserved for target use, so any memory allocated in this
+	 * region should not be used by host
+	 */
+	do {
+		if (qdf_likely(*paddr > phy_addr_reserved))
+			return QDF_STATUS_SUCCESS;
+		else {
+			QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_DEBUG,
+					  "0x%llx smaller than 0x2000 trying again",
+					  *paddr);
+
+			nbuf_retry++;
+			if ((*rx_netbuf)) {
+				/* Not freeing buffer intentionally.
+				 * Observed that same buffer is getting
+				 * re-allocated resulting in longer load time
+				 * WMI init timeout.
+				 * This buffer is anyway not useful so skip it.
+				 *.Add such buffer to invalid list and free
+				 *.them when driver unload.
+				 **/
+				qdf_nbuf_unmap_nbytes_single(dp_soc->osdev,
+											 *rx_netbuf,
+											 QDF_DMA_FROM_DEVICE,
+											 rx_desc_pool->buf_size);
+				qdf_nbuf_queue_add(&dp_soc->invalid_buf_queue,
+								   *rx_netbuf);
+			}
+
+			*rx_netbuf = qdf_nbuf_alloc(dp_soc->osdev,
+										rx_desc_pool->buf_size,
+										RX_BUFFER_RESERVATION,
+										rx_desc_pool->buf_alignment,
+										FALSE);
+
+			if (qdf_unlikely(!(*rx_netbuf)))
+				return QDF_STATUS_E_FAILURE;
+
+			ret = qdf_nbuf_map_nbytes_single(dp_soc->osdev,
+											 *rx_netbuf,
+											 QDF_DMA_FROM_DEVICE,
+											 rx_desc_pool->buf_size);
+
+			if (qdf_unlikely(ret == QDF_STATUS_E_FAILURE)) {
+				qdf_nbuf_free(*rx_netbuf);
+				*rx_netbuf = NULL;
+				continue;
+			}
+
+			*paddr = qdf_nbuf_get_frag_paddr(*rx_netbuf, 0);
+		}
+	} while (nbuf_retry < MAX_RETRY);
+
+	if ((*rx_netbuf)) {
+		qdf_nbuf_unmap_nbytes_single(dp_soc->osdev,
+									 *rx_netbuf,
+									 QDF_DMA_FROM_DEVICE,
+									 rx_desc_pool->buf_size);
+		qdf_nbuf_queue_add(&dp_soc->invalid_buf_queue,
+						   *rx_netbuf);
+	}
+
+	return QDF_STATUS_E_FAILURE;
+}
+
 /*for qcn9000 emulation the pcie is complete phy and no address restrictions*/
-#if !defined(BUILD_X86) || defined(QCA_WIFI_QCN9000)
-static inline int check_x86_paddr(struct dp_soc *dp_soc, qdf_nbuf_t *rx_netbuf,
+#elif !defined(BUILD_X86) || defined(QCA_WIFI_QCN9000)
+static inline int dp_check_paddr(struct dp_soc *dp_soc, qdf_nbuf_t *rx_netbuf,
 		qdf_dma_addr_t *paddr, struct rx_desc_pool *rx_desc_pool)
 {
 	return QDF_STATUS_SUCCESS;
 }
 #else
 #define MAX_RETRY 100
-static inline int check_x86_paddr(struct dp_soc *dp_soc, qdf_nbuf_t *rx_netbuf,
+static inline int dp_check_paddr(struct dp_soc *dp_soc, qdf_nbuf_t *rx_netbuf,
 		qdf_dma_addr_t *paddr, struct rx_desc_pool *rx_desc_pool)
 {
 	uint32_t nbuf_retry = 0;

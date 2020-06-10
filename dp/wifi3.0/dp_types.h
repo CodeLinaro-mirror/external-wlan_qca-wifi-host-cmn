@@ -1340,6 +1340,8 @@ struct dp_soc {
 	} wbm_sg_param;
 	/* wheather there are lots of RX packets pending */
 	bool is_rx_pending;
+	/* Invalid buffer that allocated for RX buffer */
+	qdf_nbuf_queue_t invalid_buf_queue;
 };
 
 #ifdef IPA_OFFLOAD

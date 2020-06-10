@@ -4096,6 +4096,8 @@ static void dp_soc_deinit(void *txrx_soc)
 
 	dp_soc_wds_detach(soc);
 
+	qdf_nbuf_queue_free(&soc->invalid_buf_queue);
+
 	qdf_spinlock_destroy(&soc->rx.defrag.defrag_lock);
 
 	dp_reo_cmdlist_destroy(soc);
@@ -10772,6 +10774,7 @@ void *dp_soc_init(struct dp_soc *soc, HTC_HANDLE htc_handle,
 	qdf_list_create(&soc->reo_desc_freelist, REO_DESC_FREELIST_SIZE);
 	INIT_RX_HW_STATS_LOCK(soc);
 
+	qdf_nbuf_queue_init(&soc->invalid_buf_queue);
 	/* fill the tx/rx cpu ring map*/
 	dp_soc_set_txrx_ring_map(soc);
 

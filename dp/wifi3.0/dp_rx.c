@@ -265,7 +265,7 @@ QDF_STATUS dp_rx_buffers_replenish(struct dp_soc *dp_soc, uint32_t mac_id,
 		 * allocating new nbuf. We can try for 100 times.
 		 * this is a temp WAR till we fix it properly.
 		 */
-		ret = check_x86_paddr(dp_soc, &rx_netbuf, &paddr, rx_desc_pool);
+		ret = dp_check_paddr(dp_soc, &rx_netbuf, &paddr, rx_desc_pool);
 		if (ret == QDF_STATUS_E_FAILURE) {
 			DP_STATS_INC(dp_pdev, replenish.x86_fail, 1);
 			break;
@@ -2583,7 +2583,7 @@ dp_pdev_nbuf_alloc_and_map(struct dp_soc *dp_soc, qdf_nbuf_t *nbuf,
 
 	paddr = qdf_nbuf_get_frag_paddr(*nbuf, 0);
 
-	ret = check_x86_paddr(dp_soc, nbuf, &paddr, rx_desc_pool);
+	ret = dp_check_paddr(dp_soc, nbuf, &paddr, rx_desc_pool);
 	if (ret == QDF_STATUS_E_FAILURE) {
 		qdf_nbuf_unmap_nbytes_single(dp_soc->osdev, *nbuf,
 					     QDF_DMA_FROM_DEVICE,
