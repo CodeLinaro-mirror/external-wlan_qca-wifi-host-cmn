@@ -81,6 +81,7 @@ struct major_alloc_priv {
 	uint32_t threshold;
 };
 
+#ifdef WLAN_DEBUGFS
 static struct major_alloc_priv mem_priv = {
 	/* List type set to mem */
 	LIST_TYPE_MEM,
@@ -94,6 +95,7 @@ static struct major_alloc_priv dma_priv = {
 	/* initial threshold to list APIs which allocates dma >= 50 times */
 	50
 };
+#endif
 
 static qdf_list_t qdf_mem_domains[QDF_DEBUG_DOMAIN_COUNT];
 static qdf_spinlock_t qdf_mem_list_lock;
@@ -338,6 +340,55 @@ void qdf_mem_skb_dec(qdf_size_t size)
 {
 	qdf_atomic_sub(size, &qdf_mem_stat.skb);
 }
+
+static void qdf_mem_debugfs_exit(void)
+{
+	debugfs_remove_recursive(qdf_mem_debugfs_root);
+	qdf_mem_debugfs_root = NULL;
+}
+
+static QDF_STATUS qdf_mem_debugfs_init(void)
+{
+	struct dentry *qdf_debugfs_root = qdf_debugfs_get_root();
+
+	if (!qdf_debugfs_root)
+		return QDF_STATUS_E_FAILURE;
+
+	qdf_mem_debugfs_root = debugfs_create_dir("mem", qdf_debugfs_root);
+
+	if (!qdf_mem_debugfs_root)
+		return QDF_STATUS_E_FAILURE;
+
+
+	debugfs_create_atomic_t("kmalloc",
+				S_IRUSR,
+				qdf_mem_debugfs_root,
+				&qdf_mem_stat.kmalloc);
+
+	debugfs_create_atomic_t("dma",
+				S_IRUSR,
+				qdf_mem_debugfs_root,
+				&qdf_mem_stat.dma);
+
+	debugfs_create_atomic_t("skb",
+				S_IRUSR,
+				qdf_mem_debugfs_root,
+				&qdf_mem_stat.skb);
+
+	return QDF_STATUS_SUCCESS;
+}
+
+#else /* WLAN_DEBUGFS */
+static inline void qdf_mem_dma_inc(qdf_size_t size) {}
+static inline void qdf_mem_dma_dec(qdf_size_t size) {}
+
+static QDF_STATUS qdf_mem_debugfs_init(void)
+{
+	return QDF_STATUS_E_NOSUPPORT;
+}
+static void qdf_mem_debugfs_exit(void) {}
+
+#endif /* WLAN_DEBUGFS */
 
 #ifdef MEMORY_DEBUG
 static int qdf_err_printer(void *priv, const char *fmt, ...)
@@ -752,6 +803,7 @@ static const struct file_operations fops_qdf_mem_debugfs = {
 	.release = seq_release,
 };
 
+#ifdef WLAN_DEBUGFS
 static QDF_STATUS qdf_mem_debug_debugfs_init(void)
 {
 	if (is_initial_mem_debug_disabled)
@@ -780,6 +832,12 @@ static QDF_STATUS qdf_mem_debug_debugfs_init(void)
 
 	return QDF_STATUS_SUCCESS;
 }
+#else
+static QDF_STATUS qdf_mem_debug_debugfs_init(void)
+{
+	return QDF_STATUS_E_NOSUPPORT;
+}
+#endif
 
 static QDF_STATUS qdf_mem_debug_debugfs_exit(void)
 {
@@ -787,80 +845,18 @@ static QDF_STATUS qdf_mem_debug_debugfs_exit(void)
 }
 
 #else /* MEMORY_DEBUG */
-
-static QDF_STATUS qdf_mem_debug_debugfs_init(void)
+static QDF_STATUS qdf_mem_debug_debugfs_exit(void)
 {
 	return QDF_STATUS_E_NOSUPPORT;
 }
 
-static QDF_STATUS qdf_mem_debug_debugfs_exit(void)
+static QDF_STATUS qdf_mem_debug_debugfs_init(void)
 {
 	return QDF_STATUS_E_NOSUPPORT;
 }
 
 #endif /* MEMORY_DEBUG */
 
-
-static void qdf_mem_debugfs_exit(void)
-{
-	debugfs_remove_recursive(qdf_mem_debugfs_root);
-	qdf_mem_debugfs_root = NULL;
-}
-
-static QDF_STATUS qdf_mem_debugfs_init(void)
-{
-	struct dentry *qdf_debugfs_root = qdf_debugfs_get_root();
-
-	if (!qdf_debugfs_root)
-		return QDF_STATUS_E_FAILURE;
-
-	qdf_mem_debugfs_root = debugfs_create_dir("mem", qdf_debugfs_root);
-
-	if (!qdf_mem_debugfs_root)
-		return QDF_STATUS_E_FAILURE;
-
-
-	debugfs_create_atomic_t("kmalloc",
-				S_IRUSR,
-				qdf_mem_debugfs_root,
-				&qdf_mem_stat.kmalloc);
-
-	debugfs_create_atomic_t("dma",
-				S_IRUSR,
-				qdf_mem_debugfs_root,
-				&qdf_mem_stat.dma);
-
-	debugfs_create_atomic_t("skb",
-				S_IRUSR,
-				qdf_mem_debugfs_root,
-				&qdf_mem_stat.skb);
-
-	return QDF_STATUS_SUCCESS;
-}
-
-#else /* WLAN_DEBUGFS */
-
-static inline void qdf_mem_dma_inc(qdf_size_t size) {}
-static inline void qdf_mem_dma_dec(qdf_size_t size) {}
-
-static QDF_STATUS qdf_mem_debugfs_init(void)
-{
-	return QDF_STATUS_E_NOSUPPORT;
-}
-static void qdf_mem_debugfs_exit(void) {}
-
-
-static QDF_STATUS qdf_mem_debug_debugfs_init(void)
-{
-	return QDF_STATUS_E_NOSUPPORT;
-}
-
-static QDF_STATUS qdf_mem_debug_debugfs_exit(void)
-{
-	return QDF_STATUS_E_NOSUPPORT;
-}
-
-#endif /* WLAN_DEBUGFS */
 
 /**
  * __qdf_mempool_init() - Create and initialize memory pool

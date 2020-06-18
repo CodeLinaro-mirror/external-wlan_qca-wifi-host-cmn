@@ -523,7 +523,7 @@
 		CFG_VALUE_OR_DEFAULT, "DP rx pending hl threshold")
 
 #define CFG_DP_RX_PENDING_LO_THRESHOLD \
-		CFG_INI_UINT("dp_rx_pending_hl_threshold", \
+		CFG_INI_UINT("dp_rx_pending_lo_threshold", \
 		WLAN_CFG_RX_PENDING_LO_THRESHOLD_MIN, \
 		WLAN_CFG_RX_PENDING_LO_THRESHOLD_MAX, \
 		WLAN_CFG_RX_PENDING_LO_THRESHOLD, \
