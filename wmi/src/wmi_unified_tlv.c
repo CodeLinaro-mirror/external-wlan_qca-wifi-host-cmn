@@ -14495,6 +14495,8 @@ static void populate_tlv_service(uint32_t *wmi_service)
 			WMI_SERVICE_NDI_NDI_STA_SUPPORT;
 	wmi_service[wmi_service_host_scan_stop_vdev_all] =
 		WMI_SERVICE_HOST_SCAN_STOP_VDEV_ALL_SUPPORT;
+	wmi_service[wmi_service_no_interband_mcc_support] =
+			WMI_SERVICE_NO_INTERBAND_MCC_SUPPORT;
 }
 
 /**
