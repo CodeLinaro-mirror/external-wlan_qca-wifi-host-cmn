@@ -88,6 +88,19 @@ void qdf_mem_init(void);
  *
  */
 void qdf_mem_exit(void);
+void qdf_mem_hash_dump(void);
+QDF_STATUS
+qdf_customized_mem_map(qdf_device_t osdev,
+				      qdf_dma_addr_t *paddr,
+				      void *src_vaddr,
+				      qdf_size_t size,
+				      qdf_dma_dir_t dir);
+
+QDF_STATUS
+qdf_customized_mem_unmap(qdf_device_t osdev,
+				      qdf_dma_addr_t paddr,
+				      qdf_size_t size,
+				      qdf_dma_dir_t dir);
 
 #define QDF_MEM_FUNC_NAME_SIZE 48
 
@@ -456,6 +469,11 @@ static inline uint32_t qdf_mem_map_nbytes_single(qdf_device_t osdev, void *buf,
 						 qdf_dma_addr_t *phy_addr)
 {
 #if defined(HIF_PCI) || defined(HIF_IPCI)
+	if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_map(osdev, phy_addr, buf,
+				nbytes, dir))
+		return QDF_STATUS_SUCCESS;
+
 	return __qdf_mem_map_nbytes_single(osdev, buf, dir, nbytes, phy_addr);
 #else
 	return 0;
@@ -485,6 +503,9 @@ static inline void qdf_mem_unmap_nbytes_single(qdf_device_t osdev,
 					       int nbytes)
 {
 #if defined(HIF_PCI) || defined(HIF_IPCI)
+	if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_unmap(osdev, phy_addr, nbytes, dir))
+		return;
 	__qdf_mem_unmap_nbytes_single(osdev, phy_addr, dir, nbytes);
 #endif
 }

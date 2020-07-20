@@ -922,6 +922,14 @@ __qdf_nbuf_map_single(qdf_device_t osdev, qdf_nbuf_t buf, qdf_dma_dir_t dir)
 {
 	qdf_dma_addr_t paddr;
 
+	if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_map(osdev, &paddr, buf->data,
+				skb_end_pointer(buf) - buf->data,
+				dir)) {
+		QDF_NBUF_CB_PADDR(buf) = paddr;
+		return QDF_STATUS_SUCCESS;
+	}
+
 	/* assume that the OS only provides a single fragment */
 	QDF_NBUF_CB_PADDR(buf) = paddr =
 		dma_map_single(osdev->dev, buf->data,
@@ -950,10 +958,18 @@ void __qdf_nbuf_unmap_single(qdf_device_t osdev, qdf_nbuf_t buf,
 void __qdf_nbuf_unmap_single(qdf_device_t osdev, qdf_nbuf_t buf,
 					qdf_dma_dir_t dir)
 {
-	if (QDF_NBUF_CB_PADDR(buf))
-		dma_unmap_single(osdev->dev, QDF_NBUF_CB_PADDR(buf),
-			skb_end_pointer(buf) - buf->data,
-			__qdf_dma_dir_to_os(dir));
+	qdf_dma_addr_t paddr = QDF_NBUF_CB_PADDR(buf);
+
+	if (paddr) {
+		if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_unmap(osdev, paddr,
+				skb_end_pointer(buf) - buf->data,
+				dir))
+			return;
+		dma_unmap_single(osdev->dev, paddr,
+		skb_end_pointer(buf) - buf->data,
+		__qdf_dma_dir_to_os(dir));
+	}
 }
 #endif
 qdf_export_symbol(__qdf_nbuf_unmap_single);
@@ -2948,6 +2964,8 @@ static uint8_t __qdf_nbuf_get_tso_cmn_seg_info(qdf_device_t osdev,
 			struct sk_buff *skb,
 			struct qdf_tso_cmn_seg_info_t *tso_info)
 {
+	uint32_t map_status;
+
 	/* Get ethernet type and ethernet header length */
 	tso_info->ethproto = vlan_get_protocol(skb);
 
@@ -2979,12 +2997,14 @@ static uint8_t __qdf_nbuf_get_tso_cmn_seg_info(qdf_device_t osdev,
 	tso_info->eit_hdr = skb->data;
 	tso_info->eit_hdr_len = (skb_transport_header(skb)
 		 - skb_mac_header(skb)) + tcp_hdrlen(skb);
-	tso_info->eit_hdr_dma_map_addr = dma_map_single(osdev->dev,
-							tso_info->eit_hdr,
-							tso_info->eit_hdr_len,
-							DMA_TO_DEVICE);
-	if (unlikely(dma_mapping_error(osdev->dev,
-				       tso_info->eit_hdr_dma_map_addr))) {
+
+	map_status =
+		qdf_mem_map_nbytes_single(osdev,
+					  tso_info->eit_hdr,
+					  QDF_DMA_TO_DEVICE,
+					  tso_info->eit_hdr_len,
+					  &tso_info->eit_hdr_dma_map_addr);
+	if (unlikely(map_status != QDF_STATUS_SUCCESS)) {
 		qdf_err("DMA mapping error!");
 		qdf_assert(0);
 		return 1;
@@ -3103,6 +3123,7 @@ uint32_t __qdf_nbuf_get_tso_info(qdf_device_t osdev, struct sk_buff *skb,
 	uint32_t tso_seg_size = skb_shinfo(skb)->gso_size;
 	int j = 0; /* skb fragment index */
 	uint8_t byte_8_align_offset;
+	uint32_t map_status;
 
 	memset(&tso_cmn_info, 0x0, sizeof(tso_cmn_info));
 	total_num_seg = tso_info->tso_num_seg_list;
@@ -3133,16 +3154,18 @@ uint32_t __qdf_nbuf_get_tso_info(qdf_device_t osdev, struct sk_buff *skb,
 	tso_frag_len = min(skb_frag_len, tso_seg_size);
 
 	if (tso_frag_len != 0) {
-		tso_frag_paddr = dma_map_single(osdev->dev,
-				tso_frag_vaddr, tso_frag_len, DMA_TO_DEVICE);
+		map_status = qdf_mem_map_nbytes_single(osdev,
+					tso_frag_vaddr,
+					QDF_DMA_TO_DEVICE,
+					tso_frag_len,
+					&tso_frag_paddr);
+		if (unlikely(map_status != QDF_STATUS_SUCCESS)) {
+			qdf_err("DMA mapping error!");
+			qdf_assert(0);
+			return 0;
+		}
 	}
 
-	if (unlikely(dma_mapping_error(osdev->dev,
-					tso_frag_paddr))) {
-		qdf_err("DMA mapping error!");
-		qdf_assert(0);
-		return 0;
-	}
 	TSO_DEBUG("%s[%d] skb frag len %d tso frag len %d\n", __func__,
 		__LINE__, skb_frag_len, tso_frag_len);
 	num_seg = tso_info->num_segs;
@@ -3261,13 +3284,12 @@ uint32_t __qdf_nbuf_get_tso_info(qdf_device_t osdev, struct sk_buff *skb,
 				return 0;
 			}
 
-			tso_frag_paddr =
-					 dma_map_single(osdev->dev,
-						 tso_frag_vaddr,
-						 tso_frag_len,
-						 DMA_TO_DEVICE);
-			if (unlikely(dma_mapping_error(osdev->dev,
-							tso_frag_paddr))) {
+			map_status = qdf_mem_map_nbytes_single(osdev,
+							tso_frag_vaddr,
+							QDF_DMA_TO_DEVICE,
+							tso_frag_len,
+							&tso_frag_paddr);
+			if (unlikely(map_status != QDF_STATUS_SUCCESS)) {
 				qdf_err("DMA mapping error!");
 				qdf_assert(0);
 				return 0;
@@ -3329,10 +3351,10 @@ void __qdf_nbuf_unmap_tso_segment(qdf_device_t osdev,
 			qdf_assert(0);
 			return;
 		}
-		dma_unmap_single(osdev->dev,
-				 tso_seg->seg.tso_frags[num_frags].paddr,
-				 tso_seg->seg.tso_frags[num_frags].length,
-				 __qdf_dma_dir_to_os(QDF_DMA_TO_DEVICE));
+		qdf_mem_unmap_nbytes_single(osdev,
+				tso_seg->seg.tso_frags[num_frags].paddr,
+				QDF_DMA_TO_DEVICE,
+				tso_seg->seg.tso_frags[num_frags].length);
 		tso_seg->seg.tso_frags[num_frags].paddr = 0;
 		num_frags--;
 		qdf_tso_seg_dbg_record(tso_seg, TSOSEG_LOC_UNMAPTSO);
@@ -3346,10 +3368,10 @@ last_seg_free_first_frag:
 			qdf_assert(0);
 			return;
 		}
-		dma_unmap_single(osdev->dev,
-				 tso_seg->seg.tso_frags[0].paddr,
-				 tso_seg->seg.tso_frags[0].length,
-				 __qdf_dma_dir_to_os(QDF_DMA_TO_DEVICE));
+		qdf_mem_unmap_nbytes_single(osdev,
+				tso_seg->seg.tso_frags[0].paddr,
+				QDF_DMA_TO_DEVICE,
+				tso_seg->seg.tso_frags[0].length);
 		tso_seg->seg.tso_frags[0].paddr = 0;
 		qdf_tso_seg_dbg_record(tso_seg, TSOSEG_LOC_UNMAPLAST);
 	}

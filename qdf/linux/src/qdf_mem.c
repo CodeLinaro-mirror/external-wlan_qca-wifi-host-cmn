@@ -381,6 +381,8 @@ static QDF_STATUS qdf_mem_debugfs_init(void)
 #else /* WLAN_DEBUGFS */
 static inline void qdf_mem_dma_inc(qdf_size_t size) {}
 static inline void qdf_mem_dma_dec(qdf_size_t size) {}
+void qdf_mem_skb_inc(qdf_size_t size) {}
+void qdf_mem_skb_dec(qdf_size_t size) {}
 
 static QDF_STATUS qdf_mem_debugfs_init(void)
 {
@@ -2127,6 +2129,448 @@ void qdf_mem_free_consistent_debug(qdf_device_t osdev, void *dev,
 qdf_export_symbol(qdf_mem_free_consistent_debug);
 #endif /* MEMORY_DEBUG */
 
+#ifdef QCA_USE_CUSTOMIZED_DMA_MEM
+struct qdf_mem_list_node {
+	struct qdf_mem_list_node *prev;
+	struct qdf_mem_list_node *next;
+};
+
+struct qdf_mem_hash_entry {
+	qdf_dma_addr_t paddr;
+	void *vaddr;
+	qdf_size_t size;
+	qdf_size_t alloc_size;
+	void *src_vaddr;
+	struct qdf_mem_list_node listnode;
+};
+
+struct qdf_mem_hash_bucket {
+	struct qdf_mem_list_node listhead;
+	struct qdf_mem_hash_entry *entries;
+	uint32_t count;
+};
+
+struct qdf_mem_customized_dma {
+	qdf_device_t osdev;
+	struct qdf_mem_hash_bucket **hash_table;
+	uint32_t total_cnt;
+	qdf_spinlock_t hash_lock;
+	struct qdf_mem_list_node free_listhead;
+	qdf_spinlock_t freelist_lock;
+	uint32_t free_list_cnt;
+};
+
+#define MEM_NUM_HASH_BUCKETS	(1024)
+#define MEM_NUM_HASH_BUCKETS_MASK	(MEM_NUM_HASH_BUCKETS-1)
+#define HASH_FUNCTION(a) \
+	((((a) >> 14) ^ ((a) >> 4)) & MEM_NUM_HASH_BUCKETS_MASK)
+#define MEM_DBG(X)
+
+static struct qdf_mem_customized_dma s_custom_mem = {0,};
+
+static inline
+void qdf_mem_list_init(struct qdf_mem_list_node *head)
+{
+	head->prev = head;
+	head->next = head;
+}
+
+static inline
+void qdf_mem_list_add_tail(struct qdf_mem_list_node *head,
+				     struct qdf_mem_list_node *node)
+{
+	head->prev->next = node;
+	node->prev = head->prev;
+	node->next = head;
+	head->prev = node;
+}
+
+static inline
+void qdf_mem_list_remove(struct qdf_mem_list_node *node)
+{
+	node->prev->next = node->next;
+	node->next->prev = node->prev;
+}
+
+static inline
+void *qdf_mem_list_peek_front(struct qdf_mem_list_node *head)
+{
+	struct qdf_mem_list_node *node;
+
+	if (head == head->next)
+		return NULL;
+
+	node = head->next;
+	return node;
+}
+static void *qdf_mem_alloc_customized_mem(qdf_device_t osdev,
+				  void *dev,
+				  qdf_size_t size,
+				  qdf_dma_addr_t *paddr)
+{
+	return qdf_mem_alloc_consistent(osdev, osdev->dev, size, paddr);
+}
+
+static void qdf_mem_free_customized_mem(qdf_device_t osdev,
+				 qdf_size_t size,
+				 qdf_dma_addr_t paddr,
+				 void *vaddr)
+{
+	qdf_mem_free_consistent(osdev, osdev->dev, size, vaddr, paddr, 0);
+}
+
+static void qdf_mem_hash_init(void)
+{
+	int i;
+	void *alloc;
+
+	QDF_ASSERT(QDF_IS_PWR2(MEM_NUM_HASH_BUCKETS));
+	s_custom_mem.hash_table = qdf_mem_malloc(MEM_NUM_HASH_BUCKETS *
+			       sizeof(struct qdf_mem_hash_bucket *));
+	if (qdf_unlikely(!s_custom_mem.hash_table)) {
+		qdf_err("Malloc failed!");
+		return;
+	}
+
+	qdf_spinlock_create(&s_custom_mem.hash_lock);
+	qdf_spinlock_create(&s_custom_mem.freelist_lock);
+	qdf_mem_list_init(&s_custom_mem.free_listhead);
+
+	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
+	for (i = 0; i < MEM_NUM_HASH_BUCKETS; i++) {
+		alloc = qdf_mem_malloc(sizeof(struct qdf_mem_hash_bucket));
+		if (qdf_unlikely(!alloc)) {
+			qdf_err("fail to malloc mem!");
+			qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
+			goto alloc_fail;
+		}
+		s_custom_mem.hash_table[i] = alloc;
+		qdf_mem_list_init(&s_custom_mem.hash_table[i]->listhead);
+	}
+	qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
+
+	return;
+
+alloc_fail:
+	for(i--; i>0; i--)
+		qdf_mem_free(s_custom_mem.hash_table[i]);
+	qdf_spinlock_destroy(&s_custom_mem.hash_lock);
+	qdf_spinlock_destroy(&s_custom_mem.freelist_lock);
+	qdf_mem_free(s_custom_mem.hash_table);
+	s_custom_mem.hash_table = NULL;
+	return;
+}
+
+static void qdf_mem_free_list(struct qdf_mem_list_node *listhead)
+{
+	struct qdf_mem_list_node *list_iter;
+	struct qdf_mem_hash_entry *hash_entry;
+
+	list_iter = listhead->next;
+	while(list_iter != listhead) {
+		hash_entry =
+			container_of(list_iter,
+				     struct qdf_mem_hash_entry,
+				     listnode);
+		qdf_mem_list_remove(&hash_entry->listnode);
+		MEM_DBG(qdf_debug("P 0x%x V %pK SV %pK size %zx",
+			  hash_entry->paddr, hash_entry->vaddr,
+			  hash_entry->src_vaddr,
+			  hash_entry->alloc_size));
+		qdf_mem_free_customized_mem(s_custom_mem.osdev,
+					    hash_entry->alloc_size,
+					    hash_entry->paddr,
+					    hash_entry->vaddr);
+		qdf_mem_free(hash_entry);
+		list_iter = list_iter->next;
+	}
+
+	return;
+}
+
+static void qdf_mem_hash_exit(void)
+{
+	int i;
+
+	if (!s_custom_mem.hash_table)
+		return;
+
+	qdf_info("hashlist cnt %d freelist cnt %d",
+		 s_custom_mem.total_cnt,
+		 s_custom_mem.free_list_cnt);
+
+	for (i = 0; i < MEM_NUM_HASH_BUCKETS; i++) {
+		qdf_mem_free_list(&s_custom_mem.hash_table[i]->listhead);
+		qdf_mem_free(s_custom_mem.hash_table[i]);
+		s_custom_mem.hash_table[i] = NULL;
+	}
+
+	qdf_mem_free_list(&s_custom_mem.free_listhead);
+
+	qdf_mem_free(s_custom_mem.hash_table);
+	s_custom_mem.hash_table = NULL;
+	qdf_spinlock_destroy(&s_custom_mem.hash_lock);
+	qdf_spinlock_destroy(&s_custom_mem.freelist_lock);
+	qdf_mem_zero(&s_custom_mem, sizeof(s_custom_mem));
+
+	return;
+}
+
+static inline
+QDF_STATUS qdf_mem_hash_list_insert(
+			struct qdf_mem_hash_entry *hash_element)
+{
+	uint32_t i;
+
+	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
+
+	i = HASH_FUNCTION(hash_element->paddr);
+
+	qdf_mem_list_add_tail(&s_custom_mem.hash_table[i]->listhead,
+			      &hash_element->listnode);
+	s_custom_mem.hash_table[i]->count++;
+	s_custom_mem.total_cnt++;
+
+	qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
+
+	MEM_DBG(qdf_debug("P 0x%x V %pK SV %pK bucket %d size %zx, TC %d FC %d",
+			  hash_element->paddr, hash_element->vaddr,
+			  hash_element->src_vaddr, (int)i,
+			  hash_element->size, s_custom_mem.total_cnt,
+			  s_custom_mem.free_list_cnt));
+
+	return QDF_STATUS_SUCCESS;
+}
+
+static void
+*qdf_mem_hash_lookup(qdf_dma_addr_t paddr)
+{
+	uint32_t i;
+	struct qdf_mem_list_node * list_iter;
+	struct qdf_mem_hash_entry *hash_entry;
+	struct qdf_mem_hash_entry *dest_entry;
+
+	if(!s_custom_mem.hash_table)
+		return NULL;
+
+	i = HASH_FUNCTION(paddr);
+	dest_entry = NULL;
+
+	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
+	list_iter = s_custom_mem.hash_table[i]->listhead.next;
+	while (list_iter != &s_custom_mem.hash_table[i]->listhead) {
+		hash_entry =
+			container_of(list_iter,
+				     struct qdf_mem_hash_entry,
+				     listnode);
+		if (hash_entry->paddr == paddr) {
+			qdf_mem_list_remove(&hash_entry->listnode);
+			dest_entry = hash_entry;
+			s_custom_mem.hash_table[i]->count--;
+			s_custom_mem.total_cnt--;
+			MEM_DBG(qdf_debug("P 0x%llx, V %pK, SV %pK S %zx B %d, C %d TC %d FC %d",
+			          (unsigned long long)paddr,
+			          hash_entry->vaddr,
+			          hash_entry->src_vaddr,
+			          hash_entry->size,
+			          (int)i,
+			          s_custom_mem.hash_table[i]->count,
+			          s_custom_mem.total_cnt,
+			          s_custom_mem.free_list_cnt));
+			break;
+		}
+		list_iter = list_iter->next;
+	}
+	qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
+
+	return dest_entry;
+}
+
+QDF_STATUS
+qdf_customized_mem_map(qdf_device_t osdev,
+			     qdf_dma_addr_t *paddr,
+			     void *src_vaddr,
+			     qdf_size_t size,
+			     qdf_dma_dir_t dir)
+{
+	void *vaddr = NULL;
+	struct qdf_mem_hash_entry *hash_entry = NULL;
+	struct qdf_mem_list_node * freelist_node;
+	qdf_size_t alloc_size = qdf_page_size;
+
+	if(!s_custom_mem.hash_table) {
+		qdf_err("not Initialized");
+		return QDF_STATUS_E_NOSUPPORT;
+	}
+
+	if(s_custom_mem.free_list_cnt > 0
+	   && size <= qdf_page_size) {
+		qdf_spin_lock_bh(&s_custom_mem.freelist_lock);
+		freelist_node =
+			qdf_mem_list_peek_front(&s_custom_mem.free_listhead);
+
+		if (qdf_unlikely(!freelist_node)) {
+			qdf_err("[node %p]head %p next %p, pre %p",
+				freelist_node, &s_custom_mem.free_listhead,
+				s_custom_mem.free_listhead.next,
+				s_custom_mem.free_listhead.prev);
+			QDF_ASSERT(0);
+			return QDF_STATUS_E_FAULT;
+		}
+
+		hash_entry =
+			container_of(freelist_node,
+				     struct qdf_mem_hash_entry,
+				     listnode);
+		qdf_mem_list_remove(&hash_entry->listnode);
+		s_custom_mem.free_list_cnt--;
+		qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
+	} else {
+		if (size > alloc_size)
+			alloc_size = size;
+		vaddr = qdf_mem_alloc_customized_mem(osdev,
+					osdev->dev, alloc_size, paddr);
+		if (qdf_unlikely(!vaddr)) {
+			qdf_err("unable to alloc mem, size %zx! %s",
+				size,
+				(qdf_mem_malloc_flags()==GFP_KERNEL)?
+				"GFP_KERNEL":"GFP_ATOMIC");
+			return QDF_STATUS_E_NOMEM;
+		}
+		hash_entry = qdf_mem_malloc(sizeof(struct qdf_mem_hash_entry));
+		if (qdf_unlikely(!hash_entry)) {
+			qdf_mem_free_customized_mem(osdev,
+					alloc_size, *paddr, vaddr);
+			qdf_err("alloc Fail");
+			return QDF_STATUS_E_NOMEM;
+		}
+		hash_entry->vaddr = vaddr;
+		hash_entry->paddr = *paddr;
+		hash_entry->alloc_size = alloc_size;
+	}
+
+	hash_entry->src_vaddr = src_vaddr;
+	hash_entry->size = size;
+	*paddr = hash_entry->paddr;
+	/* save the mem to hash list */
+	qdf_mem_hash_list_insert(hash_entry);
+
+	if (dir == QDF_DMA_TO_DEVICE
+		|| dir == QDF_DMA_BIDIRECTIONAL)
+		qdf_mem_copy(hash_entry->vaddr, src_vaddr, size);
+
+	return QDF_STATUS_SUCCESS;
+}
+
+QDF_STATUS
+qdf_customized_mem_unmap(qdf_device_t osdev,
+				qdf_dma_addr_t paddr,
+				qdf_size_t size,
+				qdf_dma_dir_t dir)
+{
+	struct qdf_mem_hash_entry *hash_entry;
+
+	hash_entry =
+		qdf_mem_hash_lookup(paddr);
+
+	if (!hash_entry) {
+		qdf_err("no entry found for %llx size %zx!\n",
+			  (unsigned long long)paddr, size);
+		QDF_ASSERT(0);
+		return QDF_STATUS_E_INVAL;
+	}
+
+	if (dir == QDF_DMA_FROM_DEVICE
+		|| dir == QDF_DMA_BIDIRECTIONAL)
+		qdf_mem_copy(hash_entry->src_vaddr,
+			hash_entry->vaddr, size);
+
+	qdf_spin_lock_bh(&s_custom_mem.freelist_lock);
+	qdf_mem_list_add_tail(&s_custom_mem.free_listhead,
+			  &hash_entry->listnode);
+	s_custom_mem.free_list_cnt++;
+	qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
+
+	MEM_DBG(qdf_debug("Add to Freelist cnt %d",
+		s_custom_mem.free_list_cnt));
+	s_custom_mem.osdev = osdev;
+
+	return QDF_STATUS_SUCCESS;
+}
+
+void qdf_mem_hash_dump(void)
+{
+	int i;
+	struct qdf_mem_hash_bucket * bucket;
+	struct qdf_mem_hash_entry *hash_entry;
+	struct qdf_mem_list_node *list_iter;
+	uint32_t cnt;
+
+	if (!s_custom_mem.hash_table)
+		return;
+
+	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
+
+	for (i=0; i< MEM_NUM_HASH_BUCKETS; i++) {
+		bucket = s_custom_mem.hash_table[i];
+		hash_entry = bucket->entries;
+		list_iter = bucket->listhead.next;
+		cnt = 0;
+		while (list_iter != &bucket->listhead) {
+			hash_entry =
+				container_of(list_iter,
+					     struct qdf_mem_hash_entry,
+					     listnode);
+			qdf_debug("bucket[%d][%d]:P 0x%llx, v %pK, SV %pK",
+				  i,
+				  cnt++,
+				  (unsigned long long)hash_entry->paddr,
+				  hash_entry->vaddr,
+				  hash_entry->src_vaddr);
+			list_iter = list_iter->next;
+		}
+	}
+	qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
+}
+
+#else
+static inline
+void qdf_mem_hash_init(void)
+{
+
+}
+
+static inline
+void qdf_mem_hash_exit(void)
+{
+
+}
+
+void qdf_mem_hash_dump(void)
+{
+
+}
+
+QDF_STATUS
+qdf_customized_mem_map(qdf_device_t osdev,
+				      qdf_dma_addr_t *paddr,
+				      void *src_vaddr,
+				      qdf_size_t size,
+				      qdf_dma_dir_t dir)
+{
+	return QDF_STATUS_E_NOSUPPORT;
+}
+
+QDF_STATUS
+qdf_customized_mem_unmap(qdf_device_t osdev,
+				      qdf_dma_addr_t paddr,
+				      qdf_size_t size,
+				      qdf_dma_dir_t dir)
+{
+	return QDF_STATUS_E_NOSUPPORT;
+}
+#endif
+
 void __qdf_mem_free_consistent(qdf_device_t osdev, void *dev,
 			       qdf_size_t size, void *vaddr,
 			       qdf_dma_addr_t paddr, qdf_dma_context_t memctx)
@@ -2262,6 +2706,7 @@ void qdf_mem_init(void)
 	qdf_net_buf_debug_init();
 	qdf_mem_debugfs_init();
 	qdf_mem_debug_debugfs_init();
+	qdf_mem_hash_init();
 }
 qdf_export_symbol(qdf_mem_init);
 
@@ -2271,6 +2716,7 @@ void qdf_mem_exit(void)
 	qdf_mem_debugfs_exit();
 	qdf_net_buf_debug_exit();
 	qdf_mem_debug_exit();
+	qdf_mem_hash_exit();
 }
 qdf_export_symbol(qdf_mem_exit);
 

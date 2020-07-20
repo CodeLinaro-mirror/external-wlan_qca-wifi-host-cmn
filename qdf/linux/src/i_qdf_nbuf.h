@@ -2241,6 +2241,13 @@ static inline QDF_STATUS __qdf_nbuf_map_nbytes_single(
 {
 	qdf_dma_addr_t paddr;
 
+	if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_map(osdev, &paddr, buf->data,
+				nbytes, dir)) {
+		QDF_NBUF_CB_PADDR(buf) = paddr;
+		return QDF_STATUS_SUCCESS;
+	}
+
 	/* assume that the OS only provides a single fragment */
 	QDF_NBUF_CB_PADDR(buf) = paddr =
 		dma_map_single(osdev->dev, buf->data,
@@ -2271,6 +2278,10 @@ __qdf_nbuf_unmap_nbytes_single(qdf_device_t osdev, struct sk_buff *buf,
 			       qdf_dma_dir_t dir, int nbytes)
 {
 	qdf_dma_addr_t paddr = QDF_NBUF_CB_PADDR(buf);
+
+	if (QDF_STATUS_SUCCESS ==
+		qdf_customized_mem_unmap(osdev, paddr, nbytes, dir))
+		return;
 
 	if (qdf_likely(paddr)) {
 		dma_unmap_single(osdev->dev, paddr, nbytes,
