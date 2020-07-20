@@ -1082,6 +1082,14 @@ __qdf_nbuf_map_single(qdf_device_t osdev, qdf_nbuf_t buf, qdf_dma_dir_t dir)
 {
 	qdf_dma_addr_t paddr;
 
+	if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_map(osdev, &paddr, buf->data,
+				skb_end_pointer(buf) - buf->data,
+				dir)) {
+		QDF_NBUF_CB_PADDR(buf) = paddr;
+		return QDF_STATUS_SUCCESS;
+	}
+
 	/* assume that the OS only provides a single fragment */
 	QDF_NBUF_CB_PADDR(buf) = paddr =
 		dma_map_single(osdev->dev, buf->data,
@@ -1112,12 +1120,19 @@ void __qdf_nbuf_unmap_single(qdf_device_t osdev, qdf_nbuf_t buf,
 void __qdf_nbuf_unmap_single(qdf_device_t osdev, qdf_nbuf_t buf,
 					qdf_dma_dir_t dir)
 {
-	if (QDF_NBUF_CB_PADDR(buf)) {
+	qdf_dma_addr_t paddr = QDF_NBUF_CB_PADDR(buf);
+
+	if (paddr) {
 		__qdf_record_nbuf_nbytes(
 			__qdf_nbuf_get_end_offset(buf), dir, false);
-		dma_unmap_single(osdev->dev, QDF_NBUF_CB_PADDR(buf),
-			skb_end_pointer(buf) - buf->data,
-			__qdf_dma_dir_to_os(dir));
+		if (QDF_STATUS_SUCCESS ==
+			qdf_customized_mem_unmap(osdev, paddr,
+				skb_end_pointer(buf) - buf->data,
+				dir))
+			return;
+		dma_unmap_single(osdev->dev, paddr,
+		skb_end_pointer(buf) - buf->data,
+		__qdf_dma_dir_to_os(dir));
 	}
 }
 #endif
@@ -3246,10 +3261,15 @@ static inline qdf_dma_addr_t qdf_nbuf_tso_map_frag(
 	uint32_t nbytes, qdf_dma_dir_t dir)
 {
 	qdf_dma_addr_t tso_frag_paddr = 0;
+	uint32_t map_status;
 
-	tso_frag_paddr = dma_map_single(osdev->dev, tso_frag_vaddr,
-					nbytes, __qdf_dma_dir_to_os(dir));
-	if (unlikely(dma_mapping_error(osdev->dev, tso_frag_paddr))) {
+	map_status =
+		qdf_mem_map_nbytes_single(osdev,
+					  tso_frag_vaddr,
+					  QDF_DMA_TO_DEVICE,
+					  nbytes,
+					  &tso_frag_paddr);
+	if (unlikely(map_status != QDF_STATUS_SUCCESS)) {
 		qdf_err("DMA mapping error!");
 		qdf_assert_always(0);
 		return 0;
