@@ -459,6 +459,7 @@ int hif_bus_reset_resume(struct hif_opaque_softc *scn)
 	return hif_sc->bus_ops.hif_bus_reset_resume(hif_sc);
 }
 
+#ifdef CE_MSI_DYNAMIC_CFG
 int hif_apps_irqs_disable(struct hif_opaque_softc *hif_ctx)
 {
 	struct hif_softc *scn;
@@ -530,6 +531,27 @@ int hif_apps_wake_irq_enable(struct hif_opaque_softc *hif_ctx)
 
 	return 0;
 }
+#else
+int hif_apps_irqs_disable(struct hif_opaque_softc *hif_ctx)
+{
+    return 0;
+}
+
+int hif_apps_irqs_enable(struct hif_opaque_softc *hif_ctx)
+{
+    return 0;
+}
+
+int hif_apps_wake_irq_disable(struct hif_opaque_softc *hif_ctx)
+{
+    return 0;
+}
+
+int hif_apps_wake_irq_enable(struct hif_opaque_softc *hif_ctx)
+{
+    return 0;
+}
+#endif
 
 int hif_apps_disable_irq_wake(struct hif_opaque_softc *hif_ctx)
 {
