@@ -2219,7 +2219,7 @@ static void qdf_mem_free_customized_mem(qdf_device_t osdev,
 	qdf_mem_free_consistent(osdev, osdev->dev, size, vaddr, paddr, 0);
 }
 
-static void qdf_mem_hash_init(void)
+void qdf_mem_custom_init(void)
 {
 	int i;
 	void *alloc;
@@ -2265,6 +2265,7 @@ static void qdf_mem_free_list(struct qdf_mem_list_node *listhead)
 {
 	struct qdf_mem_list_node *list_iter;
 	struct qdf_mem_hash_entry *hash_entry;
+	static uint32_t free_cnt = 0;
 
 	list_iter = listhead->next;
 	while(list_iter != listhead) {
@@ -2273,10 +2274,12 @@ static void qdf_mem_free_list(struct qdf_mem_list_node *listhead)
 				     struct qdf_mem_hash_entry,
 				     listnode);
 		qdf_mem_list_remove(&hash_entry->listnode);
-		MEM_DBG(qdf_debug("P 0x%x V %pK SV %pK size %zx",
+		free_cnt++;
+		MEM_DBG(qdf_debug("P 0x%x V %pK SV %pK size %zx cnt %u",
 			  hash_entry->paddr, hash_entry->vaddr,
 			  hash_entry->src_vaddr,
-			  hash_entry->alloc_size));
+			  hash_entry->alloc_size,
+			  free_cnt));
 		qdf_mem_free_customized_mem(s_custom_mem.osdev,
 					    hash_entry->alloc_size,
 					    hash_entry->paddr,
@@ -2288,7 +2291,7 @@ static void qdf_mem_free_list(struct qdf_mem_list_node *listhead)
 	return;
 }
 
-static void qdf_mem_hash_exit(void)
+void qdf_mem_custom_deinit(void)
 {
 	int i;
 
@@ -2534,14 +2537,12 @@ void qdf_mem_hash_dump(void)
 }
 
 #else
-static inline
-void qdf_mem_hash_init(void)
+void qdf_mem_custom_init(void)
 {
 
 }
 
-static inline
-void qdf_mem_hash_exit(void)
+void qdf_mem_custom_deinit(void)
 {
 
 }
@@ -2706,7 +2707,6 @@ void qdf_mem_init(void)
 	qdf_net_buf_debug_init();
 	qdf_mem_debugfs_init();
 	qdf_mem_debug_debugfs_init();
-	qdf_mem_hash_init();
 }
 qdf_export_symbol(qdf_mem_init);
 
@@ -2716,7 +2716,6 @@ void qdf_mem_exit(void)
 	qdf_mem_debugfs_exit();
 	qdf_net_buf_debug_exit();
 	qdf_mem_debug_exit();
-	qdf_mem_hash_exit();
 }
 qdf_export_symbol(qdf_mem_exit);
 

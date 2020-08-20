@@ -89,6 +89,8 @@ void qdf_mem_init(void);
  */
 void qdf_mem_exit(void);
 void qdf_mem_hash_dump(void);
+void qdf_mem_custom_init(void);
+void qdf_mem_custom_deinit(void);
 QDF_STATUS
 qdf_customized_mem_map(qdf_device_t osdev,
 				      qdf_dma_addr_t *paddr,
