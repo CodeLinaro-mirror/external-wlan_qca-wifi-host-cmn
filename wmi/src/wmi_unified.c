@@ -3128,6 +3128,7 @@ void wmi_set_target_suspend(wmi_unified_t wmi_handle, A_BOOL val)
 {
 	qdf_atomic_set(&wmi_handle->is_target_suspended, val);
 }
+qdf_export_symbol(wmi_is_target_suspended);
 
 /**
  * wmi_is_target_suspended() - WMI API to check target suspend state
