@@ -52,6 +52,7 @@
 #include "pci_api.h"
 #include "ahb_api.h"
 #include "wlan_cfg.h"
+#include "hal_api.h"
 
 /* Maximum ms timeout for host to wake up target */
 #define PCIE_WAKE_TIMEOUT 1000
@@ -3450,6 +3451,7 @@ static int hif_ce_msi_map_ce_to_irq(struct hif_softc *scn, int ce_id)
 	return pci_scn->ce_msi_irq_num[ce_id];
 }
 
+#ifdef CE_MSI_DYNAMIC_CFG
 /* hif_srng_msi_irq_disable() - disable the irq for msi
  * @hif_sc: hif context
  * @ce_id: which ce to disable copy complete interrupts for
@@ -3458,17 +3460,49 @@ static int hif_ce_msi_map_ce_to_irq(struct hif_softc *scn, int ce_id)
  * without disabling these interrupts.  Interrupt mitigation can be
  * added here for better system performance.
  */
-static void hif_ce_srng_msi_irq_disable(struct hif_softc *hif_sc, int ce_id)
+static
+void hif_ce_srng_msi_irq_disable(struct hif_softc *hif_sc, int ce_id)
 {
+	struct CE_state *CE_state;
+
+	CE_state = hif_sc->ce_id_to_state[ce_id];
+	if (CE_state->src_ring) {
+	    hal_srng_msi_en_reg_set(CE_state->src_ring->srng_ctx, false);
+	} else if (CE_state->dest_ring && CE_state->status_ring) {
+	    hal_srng_msi_en_reg_set(CE_state->dest_ring->srng_ctx, false);
+	    hal_srng_msi_en_reg_set(CE_state->status_ring->srng_ctx, false);
+	}
+}
+
+static
+void hif_ce_srng_msi_irq_enable(struct hif_softc *hif_sc, int ce_id)
+{
+	struct CE_state *CE_state;
+
+	CE_state = hif_sc->ce_id_to_state[ce_id];
+	if (CE_state->src_ring) {
+	    hal_srng_msi_en_reg_set(CE_state->src_ring->srng_ctx, true);
+	} else if (CE_state->dest_ring && CE_state->status_ring) {
+	    hal_srng_msi_en_reg_set(CE_state->dest_ring->srng_ctx, true);
+	    hal_srng_msi_en_reg_set(CE_state->status_ring->srng_ctx, true);
+	}
+}
+#else
+static
+void hif_ce_srng_msi_irq_disable(struct hif_softc *hif_sc, int ce_id)
+{
+
 	pfrm_disable_irq_nosync(hif_sc->qdf_dev->dev,
 				hif_ce_msi_map_ce_to_irq(hif_sc, ce_id));
 }
 
-static void hif_ce_srng_msi_irq_enable(struct hif_softc *hif_sc, int ce_id)
+static
+void hif_ce_srng_msi_irq_enable(struct hif_softc *hif_sc, int ce_id)
 {
 	pfrm_enable_irq(hif_sc->qdf_dev->dev,
 			hif_ce_msi_map_ce_to_irq(hif_sc, ce_id));
 }
+#endif
 
 static void hif_ce_legacy_msi_irq_disable(struct hif_softc *hif_sc, int ce_id)
 {
@@ -3594,21 +3628,14 @@ free_wake_irq:
 
 static void hif_exec_grp_irq_disable(struct hif_exec_context *hif_ext_group)
 {
-	int i;
-	struct hif_softc *scn = HIF_GET_SOFTC(hif_ext_group->hif);
-
-	for (i = 0; i < hif_ext_group->numirq; i++)
-		pfrm_disable_irq_nosync(scn->qdf_dev->dev,
-					hif_ext_group->os_irq[i]);
+	if (hif_ext_group->dp_msi_handler)
+		hif_ext_group->dp_msi_handler(hif_ext_group->context, false);
 }
 
 static void hif_exec_grp_irq_enable(struct hif_exec_context *hif_ext_group)
 {
-	int i;
-	struct hif_softc *scn = HIF_GET_SOFTC(hif_ext_group->hif);
-
-	for (i = 0; i < hif_ext_group->numirq; i++)
-		pfrm_enable_irq(scn->qdf_dev->dev, hif_ext_group->os_irq[i]);
+	if (hif_ext_group->dp_msi_handler)
+		hif_ext_group->dp_msi_handler(hif_ext_group->context, true);
 }
 
 /**

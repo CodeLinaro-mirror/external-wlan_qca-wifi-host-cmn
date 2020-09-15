@@ -1188,6 +1188,7 @@ enum hif_exec_type {
 };
 
 typedef uint32_t (*ext_intr_handler)(void *, uint32_t);
+typedef void (*hif_msi_reg_handler)(void *, bool);
 
 /**
  * hif_get_int_ctx_irq_num() - retrieve an irq num for an interrupt context id
@@ -1204,6 +1205,7 @@ uint32_t hif_configure_ext_group_interrupts(struct hif_opaque_softc *hif_ctx);
 uint32_t  hif_register_ext_group(struct hif_opaque_softc *hif_ctx,
 		uint32_t numirq, uint32_t irq[], ext_intr_handler handler,
 		void *cb_ctx, const char *context_name,
+		hif_msi_reg_handler dp_msi_handler,
 		enum hif_exec_type type, uint32_t scale);
 
 void hif_deregister_exec_group(struct hif_opaque_softc *hif_ctx,

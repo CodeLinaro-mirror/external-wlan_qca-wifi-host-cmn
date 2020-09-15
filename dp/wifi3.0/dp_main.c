@@ -2124,6 +2124,79 @@ static void dp_soc_interrupt_map_calculate(struct dp_soc *soc, int intr_ctx_num,
 				msi_vector_count, msi_vector_start);
 }
 
+#ifdef DP_MSI_DYNAMIC_CFG
+static void dp_set_msi_en_reg(void *ctx, bool flag)
+{
+	struct dp_intr *int_ctx = (struct dp_intr *)ctx;
+	struct dp_soc *soc = int_ctx->soc;
+	int ring = 0;
+	uint8_t tx_mask = int_ctx->tx_ring_mask;
+	uint8_t rx_mask = int_ctx->rx_ring_mask;
+	uint8_t rx_err_mask = int_ctx->rx_err_ring_mask;
+	uint8_t rx_wbm_rel_mask = int_ctx->rx_wbm_rel_ring_mask;
+	uint8_t reo_status_mask = int_ctx->reo_status_ring_mask;
+	struct dp_pdev *pdev = NULL;
+	hal_ring_handle_t hal_srng;
+
+	while (tx_mask) {
+		if (tx_mask & 0x1) {
+			hal_srng = soc->tx_comp_ring[ring].hal_srng;
+			hal_srng_msi_en_reg_set(hal_srng, flag);
+		}
+		tx_mask = tx_mask >> 1;
+		ring++;
+	}
+
+	if (rx_err_mask) {
+		hal_srng = soc->reo_exception_ring.hal_srng;
+		hal_srng_msi_en_reg_set(hal_srng, flag);
+	}
+
+	if (rx_wbm_rel_mask) {
+		hal_srng = soc->rx_rel_ring.hal_srng;
+		hal_srng_msi_en_reg_set(hal_srng, flag);
+	}
+
+	if (rx_mask) {
+		for (ring = 0; ring < soc->num_reo_dest_rings; ring++) {
+			if (!(rx_mask & (1 << ring)))
+				continue;
+			hal_srng = soc->reo_dest_ring[ring].hal_srng;
+			hal_srng_msi_en_reg_set(hal_srng, flag);
+		}
+	}
+
+	if (reo_status_mask) {
+		hal_srng = soc->reo_status_ring.hal_srng;
+		hal_srng_msi_en_reg_set(hal_srng, flag);
+	}
+
+	for  (ring = 0 ; ring < MAX_NUM_LMAC_HW; ring++) {
+		pdev = dp_get_pdev_for_lmac_id(soc, ring);
+		if (!pdev)
+			continue;
+		if (int_ctx->rx_mon_ring_mask & (1 << ring)) {
+			hal_srng = soc->rxdma_mon_status_ring[ring].hal_srng;
+			hal_srng_msi_en_reg_set(hal_srng, flag);
+		}
+
+		if (int_ctx->rxdma2host_ring_mask & (1 << ring)) {
+			hal_srng = soc->rxdma_err_dst_ring[ring].hal_srng;
+			hal_srng_msi_en_reg_set(hal_srng, flag);
+		}
+
+		if (int_ctx->host2rxdma_ring_mask & (1 << ring)) {
+			hal_srng = soc->rx_refill_buf_ring[ring].hal_srng;
+			hal_srng_msi_en_reg_set(hal_srng, flag);
+		}
+	}
+}
+#else
+static void dp_set_msi_en_reg(void *ctx, bool flag)
+{
+}
+#endif
+
 /*
  * dp_soc_interrupt_attach() - Register handlers for DP interrupts
  * @txrx_soc: DP SOC handle
@@ -2189,6 +2262,7 @@ static QDF_STATUS dp_soc_interrupt_attach(struct cdp_soc_t *txrx_soc)
 		ret = hif_register_ext_group(soc->hif_handle,
 				num_irq, irq_id_map, dp_service_srngs,
 				&soc->intr_ctx[i], "dp_intr",
+				dp_set_msi_en_reg,
 				HIF_EXEC_NAPI_TYPE, QCA_NAPI_DEF_SCALE_BIN_SHIFT);
 
 		if (ret) {

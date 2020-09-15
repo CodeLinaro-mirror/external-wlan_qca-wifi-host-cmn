@@ -462,7 +462,7 @@ int hif_apps_irqs_disable(struct hif_opaque_softc *hif_ctx)
 		int irq = scn->bus_ops.hif_map_ce_to_irq(scn, i);
 
 		if (irq != scn->wake_irq)
-			disable_irq(irq);
+			scn->bus_ops.hif_irq_disable(scn, i);
 	}
 
 	return 0;
@@ -484,7 +484,7 @@ int hif_apps_irqs_enable(struct hif_opaque_softc *hif_ctx)
 		int irq = scn->bus_ops.hif_map_ce_to_irq(scn, i);
 
 		if (irq != scn->wake_irq)
-			enable_irq(irq);
+			scn->bus_ops.hif_irq_enable(scn, i);
 	}
 
 	return 0;

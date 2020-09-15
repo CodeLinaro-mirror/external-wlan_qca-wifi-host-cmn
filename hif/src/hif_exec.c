@@ -887,6 +887,7 @@ void hif_exec_kill(struct hif_opaque_softc *hif_ctx)
 uint32_t hif_register_ext_group(struct hif_opaque_softc *hif_ctx,
 		uint32_t numirq, uint32_t irq[], ext_intr_handler handler,
 		void *cb_ctx, const char *context_name,
+		hif_msi_reg_handler dp_msi_handler,
 		enum hif_exec_type type, uint32_t scale)
 {
 	struct hif_softc *scn = HIF_GET_SOFTC(hif_ctx);
@@ -928,6 +929,7 @@ uint32_t hif_register_ext_group(struct hif_opaque_softc *hif_ctx,
 	atomic_set(&hif_ext_group->tasklet_deleted, 0);
 
 	qdf_semaphore_init(&hif_ext_group->tasklet_sem);
+	hif_ext_group->dp_msi_handler = dp_msi_handler;
 
 	hif_state->hif_num_extgroup++;
 	return QDF_STATUS_SUCCESS;

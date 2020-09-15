@@ -90,7 +90,7 @@ struct hif_exec_context {
 	void *context;
 	ext_intr_handler handler;
 	struct hif_event_history *evt_hist;
-
+	hif_msi_reg_handler dp_msi_handler;
 	bool (*work_complete)(struct hif_exec_context *, int work_done);
 	void (*irq_enable)(struct hif_exec_context *);
 	void (*irq_disable)(struct hif_exec_context *);

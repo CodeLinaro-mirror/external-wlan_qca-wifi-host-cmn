@@ -3277,7 +3277,7 @@ void hif_ce_prepare_config(struct hif_softc *scn)
 		hif_state->target_ce_config = target_ce_config_wlan_qca6390;
 		hif_state->target_ce_config_sz =
 					sizeof(target_ce_config_wlan_qca6390);
-
+		scn->disable_wake_irq = 1;
 		scn->ce_count = QCA_6390_CE_COUNT;
 		break;
 	case TARGET_TYPE_QCA6490:
@@ -3285,7 +3285,7 @@ void hif_ce_prepare_config(struct hif_softc *scn)
 		hif_state->target_ce_config = target_ce_config_wlan_qca6490;
 		hif_state->target_ce_config_sz =
 					sizeof(target_ce_config_wlan_qca6490);
-
+		scn->disable_wake_irq = 1;
 		scn->ce_count = QCA_6490_CE_COUNT;
 		break;
 	case TARGET_TYPE_QCA6750:

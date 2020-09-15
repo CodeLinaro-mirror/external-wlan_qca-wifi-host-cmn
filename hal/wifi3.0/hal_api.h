@@ -880,6 +880,16 @@ void hal_reo_read_write_ctrl_ix(hal_soc_handle_t hal_soc_hdl, bool read,
 extern void hal_srng_dst_set_hp_paddr(struct hal_srng *sring, uint64_t paddr);
 
 /**
+ * hal_srng_msi_en_reg_set() - Disable/enable MSI1_ENABLE reg
+ * @hal_ring: Ring pointer (Source or Destination ring)
+ * @flag: true means enable and false means disable
+ */
+extern void hal_srng_msi_en_reg_set(
+			hal_ring_handle_t hal_ring_hdl,
+			bool flag);
+
+
+/**
  * hal_srng_dst_init_hp() - Initilaize head pointer with cached head pointer
  * @srng: sring pointer
  * @vaddr: virtual address

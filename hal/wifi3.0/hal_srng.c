@@ -963,6 +963,50 @@ void hal_srng_dst_set_hp_paddr(struct hal_srng *srng,
 }
 
 /**
+ * hif_srng_dp_msi_en_reg_write() - Disable/enable MSI1_ENABLE reg
+ * @hal_ring: Ring pointer (Source or Destination ring)
+ * @flag: true means enable and false means disable
+ */
+void hal_srng_msi_en_reg_set(
+			hal_ring_handle_t hal_ring_hdl,
+			bool flag)
+{
+	struct hal_srng *srng = (struct hal_srng *)hal_ring_hdl;
+	uint32_t reg_pos = 0;
+	uint32_t reg_val = 0;
+
+	if (srng->ring_dir == HAL_SRNG_SRC_RING) {
+		reg_pos = SRNG_SM(SRNG_SRC_FLD(MSI1_BASE_MSB, ADDR),
+			(uint64_t)(srng->msi_addr) >> 32) |
+			SRNG_SM(SRNG_SRC_FLD(MSI1_BASE_MSB,
+			MSI1_ENABLE), 1);
+		if (!flag) {
+			reg_val = SRNG_SRC_REG_READ(srng, MSI1_BASE_MSB);
+			reg_val &= ~(reg_pos);
+			SRNG_SRC_REG_WRITE(srng, MSI1_BASE_MSB, reg_val);
+		} else {
+			reg_val = SRNG_SRC_REG_READ(srng, MSI1_BASE_MSB);
+			reg_val |= reg_pos;
+			SRNG_SRC_REG_WRITE(srng, MSI1_BASE_MSB, reg_val);
+		}
+	} else {
+		reg_pos = SRNG_SM(SRNG_DST_FLD(MSI1_BASE_MSB, ADDR),
+			(uint64_t)(srng->msi_addr) >> 32) |
+			SRNG_SM(SRNG_DST_FLD(MSI1_BASE_MSB,
+			MSI1_ENABLE), 1);
+		if (!flag) {
+			reg_val = SRNG_DST_REG_READ(srng, MSI1_BASE_MSB);
+			reg_val &= ~(reg_pos);
+			SRNG_DST_REG_WRITE(srng, MSI1_BASE_MSB, reg_val);
+		} else {
+			reg_val = SRNG_DST_REG_READ(srng, MSI1_BASE_MSB);
+			reg_val |= reg_pos;
+			SRNG_DST_REG_WRITE(srng, MSI1_BASE_MSB, reg_val);
+		}
+	}
+}
+
+/**
  * hal_srng_dst_init_hp() - Initilaize destination ring head pointer
  * @srng: sring pointer
  * @vaddr: virtual address
