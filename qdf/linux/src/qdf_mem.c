@@ -2307,8 +2307,8 @@ void qdf_mem_custom_deinit(void)
 		qdf_mem_free(s_custom_mem.hash_table[i]);
 		s_custom_mem.hash_table[i] = NULL;
 	}
-
 	qdf_mem_free_list(&s_custom_mem.free_listhead);
+	s_custom_mem.free_list_cnt = 0;
 
 	qdf_mem_free(s_custom_mem.hash_table);
 	s_custom_mem.hash_table = NULL;
@@ -2325,10 +2325,9 @@ QDF_STATUS qdf_mem_hash_list_insert(
 {
 	uint32_t i;
 
-	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
-
 	i = HASH_FUNCTION(hash_element->paddr);
 
+	qdf_spin_lock_bh(&s_custom_mem.hash_lock);
 	qdf_mem_list_add_tail(&s_custom_mem.hash_table[i]->listhead,
 			      &hash_element->listnode);
 	s_custom_mem.hash_table[i]->count++;
@@ -2406,17 +2405,18 @@ qdf_customized_mem_map(qdf_device_t osdev,
 		return QDF_STATUS_E_NOSUPPORT;
 	}
 
+	qdf_spin_lock_bh(&s_custom_mem.freelist_lock);
 	if(s_custom_mem.free_list_cnt > 0
 	   && size <= qdf_page_size) {
-		qdf_spin_lock_bh(&s_custom_mem.freelist_lock);
 		freelist_node =
 			qdf_mem_list_peek_front(&s_custom_mem.free_listhead);
-
 		if (qdf_unlikely(!freelist_node)) {
-			qdf_err("[node %p]head %p next %p, pre %p",
+			qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
+			qdf_err("[node %p]head %p next %p, pre %p, fc %d",
 				freelist_node, &s_custom_mem.free_listhead,
 				s_custom_mem.free_listhead.next,
-				s_custom_mem.free_listhead.prev);
+				s_custom_mem.free_listhead.prev,
+				s_custom_mem.free_list_cnt);
 			QDF_ASSERT(0);
 			return QDF_STATUS_E_FAULT;
 		}
@@ -2429,6 +2429,7 @@ qdf_customized_mem_map(qdf_device_t osdev,
 		s_custom_mem.free_list_cnt--;
 		qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
 	} else {
+		qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
 		if (size > alloc_size)
 			alloc_size = size;
 		vaddr = qdf_mem_alloc_customized_mem(osdev,
