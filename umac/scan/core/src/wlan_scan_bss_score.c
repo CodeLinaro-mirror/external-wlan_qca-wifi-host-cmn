@@ -565,6 +565,36 @@ scm_calculate_oce_subnet_id_weightage(struct scan_cache_entry *entry,
 }
 
 /**
+ * calculate_sae_pk_ap_weightage() - Calculate SAE-PK AP weightage
+ * @entry: bss entry
+ * @score_params: bss score params
+ * @sae_pk_cap_present: sae_pk cap presetn in RSNXE capability field
+ *
+ * Return: SAE-PK AP weightage score
+ */
+static uint32_t
+calculate_sae_pk_ap_weightage(struct scan_cache_entry *entry,
+			      struct scoring_config *score_params,
+			      bool *sae_pk_cap_present)
+{
+	uint8_t *rsnxe_ie, *rsnxe_cap, cap_len;
+
+	rsnxe_ie = util_scan_entry_rsnxe(entry);
+
+	rsnxe_cap = wlan_parse_rsnxe_ie(rsnxe_ie, &cap_len);
+
+	if (!rsnxe_cap)
+		return 0;
+
+	*sae_pk_cap_present = *rsnxe_cap & WLAN_RSNX_CAPA_SAE_PK;
+	if (*sae_pk_cap_present)
+		return score_params->weight_cfg.sae_pk_ap_weightage *
+			MAX_PCT_SCORE;
+
+	return 0;
+}
+
+/**
  * scm_calculate_oce_ap_tx_pwr_weightage () - Calculate oce ap tx pwr weightage
  * @entry: bss entry
  * @score_params: bss score params
@@ -691,7 +721,9 @@ int scm_calculate_bss_score(struct wlan_objmgr_psoc *psoc,
 	int32_t oce_wan_score = 0;
 	uint8_t oce_ap_tx_pwr_score = 0;
 	uint8_t oce_subnet_id_score = 0;
+	uint32_t sae_pk_score = 0;
 	bool oce_subnet_id_present = 0;
+	bool sae_pk_cap_present = 0;
 	uint8_t prorated_pcnt;
 	bool is_vht = false;
 	int8_t good_rssi_threshold;
@@ -817,6 +849,10 @@ int scm_calculate_bss_score(struct wlan_objmgr_psoc *psoc,
 					score_config, &oce_subnet_id_present);
 	score += oce_subnet_id_score;
 
+	sae_pk_score = calculate_sae_pk_ap_weightage(entry, score_config,
+						     &sae_pk_cap_present);
+	score += sae_pk_score;
+
 	pdev = wlan_objmgr_get_pdev_by_id(psoc, entry->pdev_id, WLAN_SCAN_ID);
 	if (!pdev) {
 		scm_err("pdev is NULL");
@@ -844,20 +880,22 @@ int scm_calculate_bss_score(struct wlan_objmgr_psoc *psoc,
 		       score_config->beamformee_cap, score_config->cb_mode_24G,
 		       score_config->cb_mode_5G, sta_nss);
 
-	scm_nofl_debug("Candidate(%pM freq %d): rssi %d HT %d VHT %d HE %d su bfer %d phy %d  air time frac %d qbss %d cong_pct %d NSS %d ap_tx_pwr_dbm %d oce_subnet_id_present %d",
+	scm_nofl_debug("Candidate(%pM freq %d): rssi %d HT %d VHT %d HE %d su bfer %d phy %d  air time frac %d qbss %d cong_pct %d NSS %d ap_tx_pwr_dbm %d oce_subnet_id_present %d sae_pk present %d",
 		       entry->bssid.bytes, entry->channel.chan_freq,
 		       entry->rssi_raw, util_scan_entry_htcap(entry) ? 1 : 0,
 		       util_scan_entry_vhtcap(entry) ? 1 : 0,
 		       util_scan_entry_hecap(entry) ? 1 : 0, ap_su_beam_former,
 		       entry->phy_mode, entry->air_time_fraction,
 		       entry->qbss_chan_load, congestion_pct, entry->nss,
-		       ap_tx_pwr_dbm, oce_subnet_id_present);
+		       ap_tx_pwr_dbm, oce_subnet_id_present,
+		       sae_pk_cap_present);
 
-	scm_nofl_debug("Scores: prorated_pcnt %d rssi %d pcl %d ht %d vht %d he %d bfee %d bw %d band %d congestion %d nss %d oce wan %d oce ap tx pwr %d subnet id score %d TOTAL %d",
+	scm_nofl_debug("Scores: prorated_pcnt %d rssi %d pcl %d ht %d vht %d he %d bfee %d bw %d band %d congestion %d nss %d oce wan %d oce ap tx pwr %d subnet id score %d sae_pk score %d TOTAL %d",
 		       prorated_pcnt, rssi_score, pcl_score, ht_score,
 		       vht_score, he_score, beamformee_score, bandwidth_score,
 		       band_score, congestion_score, nss_score, oce_wan_score,
-		       oce_ap_tx_pwr_score, oce_subnet_id_score, score);
+		       oce_ap_tx_pwr_score, oce_subnet_id_score,
+		       sae_pk_score, score);
 
 	entry->bss_score = score;
 	return score;

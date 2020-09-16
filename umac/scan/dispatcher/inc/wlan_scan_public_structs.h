@@ -70,6 +70,7 @@ typedef uint32_t wlan_scan_id;
 #define CHANNEL_CONGESTION_WEIGHTAGE 5
 #define OCE_WAN_WEIGHTAGE 2
 #define OCE_AP_TX_POWER_WEIGHTAGE 5
+#define SAE_PK_AP_WEIGHTAGE 3
 #define OCE_SUBNET_ID_WEIGHTAGE 3
 #define BEST_CANDIDATE_MAX_WEIGHT 200
 #define MAX_PCT_SCORE 100
@@ -163,6 +164,7 @@ struct element_info {
  * @rnrie: reduced neighbor report IE
  * @adaptive_11r: pointer to adaptive 11r IE
  * @single_pmk: Pointer to sae single pmk IE
+ * @rsnxe: Pointer to rsnxe IE
  */
 struct ie_list {
 	uint8_t *tim;
@@ -215,6 +217,7 @@ struct ie_list {
 	uint8_t *extender;
 	uint8_t *adaptive_11r;
 	uint8_t *single_pmk;
+	uint8_t *rsnxe;
 };
 
 enum scan_entry_connection_state {
@@ -491,6 +494,7 @@ struct scan_cache_entry {
  * @oce_wan_weightage: OCE WAN metrics weightage
  * @oce_ap_tx_pwr_weightage: OCE AP tx power weigtage
  * @oce_subnet_id_weightage: OCE subnet id weigtage
+ * @sae_pk_ap_weightage: SAE-PK AP weigtage
  */
 struct  weight_config {
 	uint8_t rssi_weightage;
@@ -506,6 +510,7 @@ struct  weight_config {
 	uint8_t oce_wan_weightage;
 	uint8_t oce_ap_tx_pwr_weightage;
 	uint8_t oce_subnet_id_weightage;
+	uint8_t sae_pk_ap_weightage;
 };
 
 /**
