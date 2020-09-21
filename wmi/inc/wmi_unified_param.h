@@ -2765,6 +2765,7 @@ enum wfa_test_cmds {
 	WFA_CONFIG_CSA,
 	WFA_CONFIG_OCV,
 	WFA_CONFIG_SA_QUERY,
+	WFA_FILS_DISCV_FRAMES,
 };
 
 /**
