@@ -48,6 +48,9 @@
 /* maximum number of hints can be sent per 6ghz channel */
 #define MAX_HINTS_PER_CHANNEL 4
 
+/* legacy(2g+5g) scan channels threshold */
+#define LEGACY_SCAN_CHANNELS_THRESHOLD 11
+
 QDF_STATUS
 scm_scan_free_scan_request_mem(struct scan_start_request *req)
 {
@@ -1178,12 +1181,16 @@ scm_update_channel_list(struct scan_start_request *req,
 	}
 
 	req->scan_req.chan_list.num_chan = num_scan_channels;
-	/* Dont upadte the channel list for SAP mode */
+	/* Dont update the channel list:
+	 * - if not STA mode and
+	 * - if scan req has num_chan < LEGACY_SCAN_CHANNELS_THRESHOLD
+	 */
 	op_mode = wlan_vdev_mlme_get_opmode(req->vdev);
 	if (op_mode != QDF_SAP_MODE &&
 	    op_mode != QDF_P2P_DEVICE_MODE &&
 	    op_mode != QDF_P2P_CLIENT_MODE &&
-	    op_mode != QDF_P2P_GO_MODE) {
+	    op_mode != QDF_P2P_GO_MODE &&
+	    req->scan_req.chan_list.num_chan > LEGACY_SCAN_CHANNELS_THRESHOLD) {
 		scm_update_6ghz_channel_list(req->vdev,
 					     &req->scan_req.chan_list,
 					     scan_obj);
