@@ -118,6 +118,7 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 	/* subtract count from index, and wrap if necessary */
 	idx = HTC_CREDIT_HISTORY_MAX + g_htc_credit_history_idx - count;
 	idx %= HTC_CREDIT_HISTORY_MAX;
+	qdf_spin_unlock_bh(&g_htc_credit_lock);
 
 	print(print_priv,
 	      "Time (seconds)     Type                         Credits    Queue Depth");
@@ -139,8 +140,6 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 		if (idx >= HTC_CREDIT_HISTORY_MAX)
 			idx = 0;
 	}
-
-	qdf_spin_unlock_bh(&g_htc_credit_lock);
 }
 
 #ifdef WLAN_HANG_EVENT
