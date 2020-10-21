@@ -155,6 +155,7 @@ struct wlan_regulatory_pdev_priv_obj {
 	uint16_t def_country_code;
 	char current_country[REG_ALPHA2_LEN + 1];
 	uint16_t reg_dmn_pair;
+	uint16_t reg_6g_superid;
 	uint16_t ctry_code;
 #ifdef DISABLE_UNII_SHARED_BANDS
 	uint8_t unii_5g_bitmap;
