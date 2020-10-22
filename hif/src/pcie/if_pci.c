@@ -3683,18 +3683,14 @@ bool hif_pci_needs_bmi(struct hif_softc *scn)
  */
 int hif_force_wake_request(struct hif_opaque_softc *hif_handle)
 {
-	uint32_t timeout, value;
+	uint32_t timeout = 0, value;
 	struct hif_softc *scn = (struct hif_softc *)hif_handle;
 	struct hif_pci_softc *pci_scn = HIF_GET_PCI_SOFTC(scn);
 
 	HIF_STATS_INC(pci_scn, mhi_force_wake_request_vote, 1);
 
-	if (qdf_in_interrupt())
-		timeout = FORCE_WAKE_DELAY_TIMEOUT_MS * 1000;
-	else
-		timeout = 0;
-
-	if (pld_force_wake_request_sync(scn->qdf_dev->dev, timeout)) {
+	if (pld_force_wake_request_sync(scn->qdf_dev->dev,
+					FORCE_WAKE_DELAY_TIMEOUT_MS * 1000)) {
 		hif_err("force wake request send failed");
 		HIF_STATS_INC(pci_scn, mhi_force_wake_failure, 1);
 		return -EINVAL;
@@ -3715,7 +3711,6 @@ int hif_force_wake_request(struct hif_opaque_softc *hif_handle)
 	 * do not reset the timeout
 	 * total_wake_time = MHI_WAKE_TIME + PCI_WAKE_TIME < 50 ms
 	 */
-	timeout = 0;
 	do {
 		value = hif_read32_mb(
 				scn, scn->mem +
@@ -3767,16 +3762,11 @@ int hif_force_wake_request(struct hif_opaque_softc *hif_handle)
 {
 	struct hif_softc *scn = (struct hif_softc *)hif_handle;
 	struct hif_pci_softc *pci_scn = HIF_GET_PCI_SOFTC(scn);
-	uint32_t timeout;
 
 	HIF_STATS_INC(pci_scn, mhi_force_wake_request_vote, 1);
 
-	if (qdf_in_interrupt())
-		timeout = FORCE_WAKE_DELAY_TIMEOUT_MS * 1000;
-	else
-		timeout = 0;
-
-	if (pld_force_wake_request_sync(scn->qdf_dev->dev, timeout)) {
+	if (pld_force_wake_request_sync(scn->qdf_dev->dev,
+					FORCE_WAKE_DELAY_TIMEOUT_MS * 1000)) {
 		hif_err("force wake request send failed");
 		HIF_STATS_INC(pci_scn, mhi_force_wake_failure, 1);
 		return -EINVAL;
