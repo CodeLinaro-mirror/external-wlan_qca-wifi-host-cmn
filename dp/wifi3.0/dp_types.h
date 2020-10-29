@@ -854,6 +854,8 @@ struct dp_soc_stats {
 			uint32_t reo_err_oor_sg_count;
 			/* RX msdu rejected count on delivery to vdev stack_fn*/
 			uint32_t rejected;
+			/* Non Eapol packet drop count due to peer not authorized  */
+			uint32_t peer_unauth_rx_pkt_drop;
 		} err;
 
 		/* packet count per core - per ring */
@@ -1953,6 +1955,9 @@ struct dp_vdev {
 
 	/* Address search type to be set in TX descriptor */
 	uint8_t search_type;
+
+	/* Flag to enable peer authorization */
+	uint8_t peer_authorize;
 
 	/* AST hash value for BSS peer in HW valid for STA VAP*/
 	uint16_t bss_ast_hash;

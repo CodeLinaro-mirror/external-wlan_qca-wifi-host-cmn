@@ -1065,6 +1065,7 @@ enum cdp_pdev_param_type {
  * @cdp_vdev_param_mesh_mode: set mesh mode
  * @cdp_vdev_param_safe_mode: set safe mode
  * @cdp_vdev_param_drop_unenc: set drop unencrypted flag
+ * @cdp_vdev_param_peer_authorize: set peer authorize
  *
  * @cdp_pdev_param_dbg_snf: Enable debug sniffer feature
  * @cdp_pdev_param_bpr_enable: Enable bcast probe feature
@@ -1123,6 +1124,7 @@ typedef union cdp_config_param_t {
 	uint32_t cdp_vdev_param_mesh_mode;
 	uint32_t cdp_vdev_param_safe_mode;
 	uint32_t cdp_vdev_param_drop_unenc;
+	uint8_t cdp_vdev_param_peer_authorize;
 
 	/* pdev params */
 	bool cdp_pdev_param_cptr_latcy;
@@ -1227,6 +1229,7 @@ enum cdp_pdev_bpr_param {
  * @CDP_MESH_MODE: set mesh mode
  * @CDP_SAFEMODE: set safe mode
  * @CDP_DROP_UNENC: set drop unencrypted flag
+ * @CDP_ENABLE_PEER_AUTHORIZE: enable peer authorize flag
  */
 enum cdp_vdev_param_type {
 	CDP_ENABLE_NAWDS,
@@ -1251,6 +1254,7 @@ enum cdp_vdev_param_type {
 #endif
 	CDP_SAFEMODE,
 	CDP_DROP_UNENC,
+	CDP_ENABLE_PEER_AUTHORIZE,
 };
 
 /*

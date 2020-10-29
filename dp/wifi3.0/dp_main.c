@@ -7944,6 +7944,10 @@ static QDF_STATUS dp_get_vdev_param(struct cdp_soc_t *cdp_soc, uint8_t vdev_id,
 	case CDP_ENABLE_DA_WAR:
 		val->cdp_vdev_param_da_war = vdev->pdev->soc->da_war_enabled;
 		break;
+	case CDP_ENABLE_PEER_AUTHORIZE:
+		val->cdp_vdev_param_peer_authorize =
+			    vdev->peer_authorize;
+		break;
 	default:
 		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_ERROR,
 			  "param value %d is wrong\n",
@@ -8054,6 +8058,9 @@ dp_set_vdev_param(struct cdp_soc_t *cdp_soc, uint8_t vdev_id,
 				      val.cdp_vdev_param_mesh_mode);
 		break;
 #endif
+	case CDP_ENABLE_PEER_AUTHORIZE:
+		vdev->peer_authorize = val.cdp_vdev_param_peer_authorize;
+		break;
 	default:
 		break;
 	}
