@@ -2417,6 +2417,7 @@ qdf_customized_mem_map(qdf_device_t osdev,
 				s_custom_mem.free_listhead.next,
 				s_custom_mem.free_listhead.prev,
 				s_custom_mem.free_list_cnt);
+			qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
 			QDF_ASSERT(0);
 			return QDF_STATUS_E_FAULT;
 		}
