@@ -179,6 +179,12 @@ struct wlan_regulatory_pdev_priv_obj {
 	struct reg_rule_info reg_rules;
 	qdf_spinlock_t reg_rules_lock;
 	bool chan_list_recvd;
+#if defined(CONFIG_BAND_6GHZ)
+	enum reg_6g_ap_type reg_cur_6g_ap_pwr_type;
+	enum reg_6g_client_type reg_cur_6g_client_mobility_type;
+	bool reg_rnr_tpe_usable;
+	bool reg_unspecified_ap_usable;
+#endif
 };
 
 /**
