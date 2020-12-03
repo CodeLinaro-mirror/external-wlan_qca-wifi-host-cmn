@@ -107,7 +107,7 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 {
 	uint32_t idx;
 
-	print(print_priv, "HTC Credit History (count %u)", count);
+	HTC_INFO("HTC Credit History (count %u)", count);
 	qdf_spin_lock_bh(&g_htc_credit_lock);
 
 	if (count > HTC_CREDIT_HISTORY_MAX)
@@ -120,7 +120,7 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 	idx %= HTC_CREDIT_HISTORY_MAX;
 	qdf_spin_unlock_bh(&g_htc_credit_lock);
 
-	print(print_priv,
+	HTC_INFO(
 	      "Time (seconds)     Type                         Credits    Queue Depth");
 	while (count) {
 		struct HTC_CREDIT_HISTORY *hist =
@@ -128,7 +128,7 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 		uint64_t secs, usecs;
 
 		qdf_log_timestamp_to_secs(hist->time, &secs, &usecs);
-		print(print_priv, "% 8lld.%06lld    %-25s    %-7.d    %d",
+		HTC_INFO("% 8lld.%06lld    %-25s    %-7.d    %d",
 		      secs,
 		      usecs,
 		      htc_credit_exchange_type_str(hist->type),

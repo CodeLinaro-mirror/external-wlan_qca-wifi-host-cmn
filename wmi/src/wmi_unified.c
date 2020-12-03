@@ -894,7 +894,7 @@ wmi_print_cmd_log_buffer(struct wmi_log_buf_t *log_buffer, uint32_t count,
 	idx = log_buffer->size + *log_buffer->p_buf_tail_idx - count;
 	idx %= log_buffer->size;
 
-	print(print_priv, "Time (seconds)      Cmd Id              Payload");
+	WMI_LOGI("Time (seconds)      Cmd Id              Payload");
 	while (count) {
 		struct wmi_command_debug *cmd_log = (struct wmi_command_debug *)
 			&((struct wmi_command_debug *)log_buffer->buf)[idx];
@@ -912,7 +912,7 @@ wmi_print_cmd_log_buffer(struct wmi_log_buf_t *log_buffer, uint32_t count,
 					 "0x%08x ", cmd_log->data[i]);
 		}
 
-		print(print_priv, str);
+		WMI_LOGI(str);
 
 		--count;
 		++idx;
@@ -948,7 +948,7 @@ wmi_print_event_log_buffer(struct wmi_log_buf_t *log_buffer, uint32_t count,
 	idx = log_buffer->size + *log_buffer->p_buf_tail_idx - count;
 	idx %= log_buffer->size;
 
-	print(print_priv, "Time (seconds)      Event Id             Payload");
+	WMI_LOGI("Time (seconds)      Event Id             Payload");
 	while (count) {
 		struct wmi_event_debug *event_log = (struct wmi_event_debug *)
 			&((struct wmi_event_debug *)log_buffer->buf)[idx];
@@ -966,7 +966,7 @@ wmi_print_event_log_buffer(struct wmi_log_buf_t *log_buffer, uint32_t count,
 					 "0x%08x ", event_log->data[i]);
 		}
 
-		print(print_priv, str);
+		WMI_LOGI(str);
 
 		--count;
 		++idx;
