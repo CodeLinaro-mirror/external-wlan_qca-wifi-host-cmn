@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -41,6 +41,10 @@
 
 #ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
 #include <net/cnss_prealloc.h>
+#endif
+
+#ifdef QCA_USE_CUSTOMIZED_DMA_MEM
+#include <net/cnss2.h>
 #endif
 
 #if defined(MEMORY_DEBUG) || defined(NBUF_MEMORY_DEBUG)
@@ -2009,6 +2013,13 @@ void *qdf_mem_dma_alloc(qdf_device_t osdev, void *dev, qdf_size_t size,
 	return NULL;
 }
 
+#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM)
+static inline void *qdf_mem_dma_alloc(qdf_device_t osdev, void *dev,
+				      qdf_size_t size, qdf_dma_addr_t *paddr)
+{
+	return cnss_dma_alloc_coherent(dev, size, paddr, qdf_mem_malloc_flags());
+}
+
 #else
 static inline void *qdf_mem_dma_alloc(qdf_device_t osdev, void *dev,
 				      qdf_size_t size, qdf_dma_addr_t *paddr)
@@ -2023,8 +2034,13 @@ qdf_mem_dma_free(void *dev, qdf_size_t size, void *vaddr, qdf_dma_addr_t paddr)
 {
 	qdf_mem_free(vaddr);
 }
+#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM)
+static inline void
+qdf_mem_dma_free(void *dev, qdf_size_t size, void *vaddr, qdf_dma_addr_t paddr)
+{
+	cnss_dma_free_coherent(dev, size, vaddr, paddr);
+}
 #else
-
 static inline void
 qdf_mem_dma_free(void *dev, qdf_size_t size, void *vaddr, qdf_dma_addr_t paddr)
 {
@@ -2166,6 +2182,8 @@ struct qdf_mem_customized_dma {
 	((((a) >> 14) ^ ((a) >> 4)) & MEM_NUM_HASH_BUCKETS_MASK)
 #define MEM_DBG(X)
 
+#define PAGE_NUM_OF_PRALLOCATED_MEM	(10000)
+
 static struct qdf_mem_customized_dma s_custom_mem = {0,};
 
 static inline
@@ -2208,7 +2226,7 @@ static void *qdf_mem_alloc_customized_mem(qdf_device_t osdev,
 				  qdf_size_t size,
 				  qdf_dma_addr_t *paddr)
 {
-	return qdf_mem_alloc_consistent(osdev, osdev->dev, size, paddr);
+	return qdf_mem_dma_alloc(osdev, osdev->dev, size, paddr);
 }
 
 static void qdf_mem_free_customized_mem(qdf_device_t osdev,
@@ -2216,7 +2234,43 @@ static void qdf_mem_free_customized_mem(qdf_device_t osdev,
 				 qdf_dma_addr_t paddr,
 				 void *vaddr)
 {
-	qdf_mem_free_consistent(osdev, osdev->dev, size, vaddr, paddr, 0);
+	qdf_mem_dma_free(osdev->dev, size, vaddr, paddr);
+}
+
+static void qdf_mem_prealloc_customized_mem(void)
+{
+	int i;
+	qdf_dma_addr_t paddr;
+	void *vaddr;
+	struct qdf_mem_hash_entry *hash_entry = NULL;
+	qdf_size_t size = qdf_page_size;
+
+	for (i = 0; i < PAGE_NUM_OF_PRALLOCATED_MEM; i++) {
+		vaddr = qdf_mem_dma_alloc(NULL, NULL, size, &paddr);
+		if (qdf_unlikely(!vaddr)) {
+			qdf_err("Preallocate mem failed! allocated %d", i);
+			return;
+		}
+		hash_entry = qdf_mem_malloc(sizeof(struct qdf_mem_hash_entry));
+		if (qdf_unlikely(!hash_entry)) {
+			qdf_mem_dma_free(NULL,
+					size, vaddr, paddr);
+			qdf_err("alloc hash entry Fail");
+			return;
+		}
+		hash_entry->vaddr = vaddr;
+		hash_entry->paddr = paddr;
+		hash_entry->alloc_size = size;
+
+		qdf_spin_lock_bh(&s_custom_mem.freelist_lock);
+		qdf_mem_list_add_tail(&s_custom_mem.free_listhead,
+			  &hash_entry->listnode);
+		s_custom_mem.free_list_cnt++;
+		qdf_spin_unlock_bh(&s_custom_mem.freelist_lock);
+	}
+
+	qdf_info("preallocate buffer number %d", s_custom_mem.free_list_cnt);
+	return;
 }
 
 void qdf_mem_custom_init(void)
@@ -2249,6 +2303,7 @@ void qdf_mem_custom_init(void)
 	}
 	qdf_spin_unlock_bh(&s_custom_mem.hash_lock);
 
+	qdf_mem_prealloc_customized_mem();
 	return;
 
 alloc_fail:
@@ -2572,6 +2627,7 @@ qdf_customized_mem_unmap(qdf_device_t osdev,
 {
 	return QDF_STATUS_E_NOSUPPORT;
 }
+
 #endif
 
 void __qdf_mem_free_consistent(qdf_device_t osdev, void *dev,
@@ -2662,6 +2718,26 @@ void *qdf_aligned_mem_alloc_consistent_fl(
 }
 qdf_export_symbol(qdf_aligned_mem_alloc_consistent_fl);
 
+#if (defined(QCA_USE_CUSTOMIZED_DMA_MEM))
+void qdf_mem_dma_sync_single_for_device(qdf_device_t osdev,
+					qdf_dma_addr_t bus_addr,
+					qdf_size_t size,
+					enum dma_data_direction direction)
+{
+
+}
+qdf_export_symbol(qdf_mem_dma_sync_single_for_device);
+
+void qdf_mem_dma_sync_single_for_cpu(qdf_device_t osdev,
+				     qdf_dma_addr_t bus_addr,
+				     qdf_size_t size,
+				     enum dma_data_direction direction)
+{
+
+}
+qdf_export_symbol(qdf_mem_dma_sync_single_for_cpu);
+
+#else
 /**
  * qdf_mem_dma_sync_single_for_device() - assign memory to device
  * @osdev: OS device handle
@@ -2702,6 +2778,7 @@ void qdf_mem_dma_sync_single_for_cpu(qdf_device_t osdev,
 	dma_sync_single_for_cpu(osdev->dev, bus_addr,  size, direction);
 }
 qdf_export_symbol(qdf_mem_dma_sync_single_for_cpu);
+#endif
 
 void qdf_mem_init(void)
 {
