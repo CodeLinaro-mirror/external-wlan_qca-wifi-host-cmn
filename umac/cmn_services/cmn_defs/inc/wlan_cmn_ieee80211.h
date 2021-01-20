@@ -148,7 +148,7 @@
 #define WLAN_RM_CAPABILITY_IE_MAX_LEN            5
 #define WLAN_RNR_IE_MIN_LEN                      5
 #define WLAN_TPE_IE_MIN_LEN                      2
-#define WLAN_MAX_NUM_TPE_IE                      2
+#define WLAN_MAX_NUM_TPE_IE                      8
 
 /* HT capability flags */
 #define WLAN_HTCAP_C_ADVCODING             0x0001
