@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -69,6 +69,11 @@ WMI_CMD_HDR to be defined here. */
 #define WMI_EP_APASS           0x0
 #define WMI_EP_LPASS           0x1
 #define WMI_EP_SENSOR          0x2
+
+#define WMI_INFOS_DBG_FILE_PERM (QDF_FILE_USR_READ | \
+				 QDF_FILE_USR_WRITE | \
+				 QDF_FILE_GRP_READ | \
+				 QDF_FILE_OTH_READ)
 
 /*
  *  * Control Path
@@ -1228,9 +1233,12 @@ static void wmi_debugfs_create(wmi_unified_t wmi_handle,
 		goto out;
 
 	for (i = 0; i < NUM_DEBUG_INFOS; ++i) {
-		wmi_handle->debugfs_de[i] = debugfs_create_file(
-				wmi_debugfs_infos[i].name, 0644, par_entry,
-				wmi_handle, wmi_debugfs_infos[i].ops);
+		wmi_handle->debugfs_de[i] = qdf_debugfs_create_entry(
+						wmi_debugfs_infos[i].name,
+						WMI_INFOS_DBG_FILE_PERM,
+						par_entry,
+						wmi_handle,
+						wmi_debugfs_infos[i].ops);
 
 		if (!wmi_handle->debugfs_de[i]) {
 			wmi_err("debug Entry creation failed!");
@@ -1267,7 +1275,7 @@ static void wmi_debugfs_remove(wmi_unified_t wmi_handle)
 	}
 
 	if (dentry)
-		debugfs_remove_recursive(dentry);
+		qdf_debugfs_remove_dir_recursive(dentry);
 }
 
 /**
@@ -1286,7 +1294,7 @@ static QDF_STATUS wmi_debugfs_init(wmi_unified_t wmi_handle, uint32_t pdev_idx)
 		 wmi_handle->soc->soc_idx, pdev_idx);
 
 	wmi_handle->log_info.wmi_log_debugfs_dir =
-		debugfs_create_dir(buf, NULL);
+		qdf_debugfs_create_dir(buf, NULL);
 
 	if (!wmi_handle->log_info.wmi_log_debugfs_dir) {
 		wmi_err("error while creating debugfs dir for %s", buf);
@@ -1646,7 +1654,7 @@ wmi_buf_alloc_debug(wmi_unified_t wmi_handle, uint32_t len,
 {
 	wmi_buf_t wmi_buf;
 
-	if (roundup(len + WMI_MIN_HEAD_ROOM, 4) > wmi_handle->max_msg_len) {
+	if (roundup(len + sizeof(WMI_CMD_HDR), 4) > wmi_handle->max_msg_len) {
 		QDF_ASSERT(0);
 		return NULL;
 	}
@@ -1687,7 +1695,7 @@ wmi_buf_t wmi_buf_alloc_fl(wmi_unified_t wmi_handle, uint32_t len,
 {
 	wmi_buf_t wmi_buf;
 
-	if (roundup(len + WMI_MIN_HEAD_ROOM, 4) > wmi_handle->max_msg_len) {
+	if (roundup(len + sizeof(WMI_CMD_HDR), 4) > wmi_handle->max_msg_len) {
 		QDF_DEBUG_PANIC("Invalid length %u (via %s:%u)",
 				len, func, line);
 		return NULL;
@@ -2578,25 +2586,13 @@ static int __wmi_process_qmi_fw_event(void *wmi_cb_ctx, void *buf, int len)
 	struct wmi_unified *wmi_handle = wmi_cb_ctx;
 	wmi_buf_t evt_buf;
 	uint32_t evt_id;
-	int wmi_msg_len;
 
-	if (!wmi_handle || !buf || (len < WMI_MIN_HEAD_ROOM))
+	if (!wmi_handle || !buf)
 		return -EINVAL;
 
-	/**
-	 * Subtract WMI_MIN_HEAD_ROOM from received QMI event length to get
-	 * wmi message length
-	 */
-	wmi_msg_len = len - WMI_MIN_HEAD_ROOM;
-
-	evt_buf = wmi_buf_alloc(wmi_handle, wmi_msg_len);
+	evt_buf = wmi_buf_alloc(wmi_handle, len);
 	if (!evt_buf)
 		return -ENOMEM;
-
-	/*
-	 * Set the length of the buffer to match the allocation size.
-	 */
-	qdf_nbuf_set_pktlen(evt_buf, len);
 
 	qdf_mem_copy(qdf_nbuf_data(evt_buf), buf, len);
 	evt_id = WMI_GET_FIELD(qdf_nbuf_data(evt_buf), WMI_CMD_HDR, COMMANDID);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
  *
  *
  * Permission to use, copy, modify, and/or distribute this software for
@@ -952,8 +952,6 @@ struct cdp_wds_ops {
 };
 
 struct cdp_raw_ops {
-	int (*txrx_get_nwifi_mode)(struct cdp_soc_t *soc, uint8_t vdev_id);
-
 	QDF_STATUS
 	(*rsim_get_astentry)(struct cdp_soc_t *soc, uint8_t vdev_id,
 			     qdf_nbuf_t *pnbuf, struct cdp_raw_ast *raw_ast);
@@ -1155,6 +1153,13 @@ struct ol_if_ops {
 				      uint16_t peer_id, uint8_t vdev_id,
 				      uint8_t *peer_macaddr);
 #endif /* QCA_SUPPORT_WDS_EXTENDED */
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+	QDF_STATUS(*peer_update_mesh_latency_params)(
+			     struct cdp_ctrl_objmgr_psoc *psoc,
+				   uint8_t vdev_id, uint8_t *peer_mac, uint8_t tid,
+				   uint32_t service_interval, uint32_t burst_size,
+				   uint8_t add_or_sub, uint8_t ac);
+#endif
 };
 
 #ifdef DP_PEER_EXTENDED_API
@@ -1712,6 +1717,20 @@ struct cdp_mscs_ops {
 };
 #endif
 
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+/**
+ * struct cdp_mesh_latency_ops - data path ops for Mesh latency
+ * @mesh_latency_update_peer_parameter:
+ */
+struct cdp_mesh_latency_ops {
+	QDF_STATUS (*mesh_latency_update_peer_parameter)(
+			struct cdp_soc_t *soc,
+			uint8_t *dest_mac, uint32_t service_interval,
+			uint32_t burst_size, uint16_t priority,
+			uint8_t add_or_sub);
+};
+#endif
+
 struct cdp_ops {
 	struct cdp_cmn_ops          *cmn_drv_ops;
 	struct cdp_ctrl_ops         *ctrl_ops;
@@ -1749,6 +1768,9 @@ struct cdp_ops {
 #endif
 #ifdef WLAN_SUPPORT_MSCS
 	struct cdp_mscs_ops         *mscs_ops;
+#endif
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+	struct cdp_mesh_latency_ops         *mesh_latency_ops;
 #endif
 
 };

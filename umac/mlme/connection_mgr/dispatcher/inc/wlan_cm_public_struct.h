@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015, 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2015,2020-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -83,6 +83,20 @@ struct wlan_cm_connect_crypto_info {
 #define WLAN_CM_FILS_MAX_RRK_LENGTH 64
 
 /**
+ * enum wlan_fils_auth_type - fils auth type info
+ * @FILS_SK_WITHOUT_PFS: without pfs
+ * @FILS_SK_WITH_PFS: with pfs
+ * @FILS_PK_AUTH: fils auth
+ * @FILS_PK_MAX: max value
+ */
+enum wlan_fils_auth_type {
+	FILS_SK_WITHOUT_PFS,
+	FILS_SK_WITH_PFS,
+	FILS_PK_AUTH,
+	FILS_PK_MAX,
+};
+
+/**
  * struct wlan_fils_con_info - fils connect req info
  * @is_fils_connection: is fils connection
  * @username_len: username length
@@ -102,13 +116,15 @@ struct wlan_fils_con_info {
 	uint16_t next_seq_num;
 	uint32_t rrk_len;
 	uint8_t rrk[WLAN_CM_FILS_MAX_RRK_LENGTH];
+	enum wlan_fils_auth_type auth_type;
 };
 #endif
 
 /**
  * enum wlan_cm_source - connection manager req source
  * @CM_OSIF_CONNECT: Connect req initiated by OSIF or north bound
- * @CM_ROAMING: Roaming request
+ * @CM_ROAMING_HOST: Roaming request initiated by host
+ * @CM_ROAMING_FW: Roam req initiated by FW
  * @CM_OSIF_DISCONNECT: Disconnect req initiated by OSIF or north bound
  * @CM_PEER_DISCONNECT: Disconnect req initiated by peer sending deauth/disassoc
  * only for this localy generated will be false while indicating to kernel
@@ -126,7 +142,8 @@ struct wlan_fils_con_info {
  */
 enum wlan_cm_source {
 	CM_OSIF_CONNECT,
-	CM_ROAMING,
+	CM_ROAMING_HOST,
+	CM_ROAMING_FW,
 	CM_OSIF_DISCONNECT,
 	CM_PEER_DISCONNECT,
 	CM_SB_DISCONNECT,
@@ -223,6 +240,36 @@ struct wlan_cm_vdev_connect_req {
 #ifdef WLAN_FEATURE_FILS_SK
 	struct wlan_fils_con_info *fils_info;
 #endif
+};
+
+/**
+ * struct wlan_cm_roam_req - roam req from requester
+ * @vdev_id: vdev id
+ * @source: source of the req
+ * @bssid: bssid given
+ * @prev_bssid: prev AP bssid, given in case supplican want to roam to new BSSID
+ * @chan_freq: channel of the AP
+ */
+struct wlan_cm_roam_req {
+	uint8_t vdev_id;
+	enum wlan_cm_source source;
+	struct qdf_mac_addr bssid;
+	struct qdf_mac_addr prev_bssid;
+	uint32_t chan_freq;
+};
+
+/**
+ * struct wlan_cm_vdev_reassoc_req - Reassoc req from connection manager to
+ * vdev mgr
+ * @vdev_id: vdev id
+ * @cm_id: Connect manager id
+ * @bss: scan entry for the candidate
+ */
+struct wlan_cm_vdev_reassoc_req {
+	uint8_t vdev_id;
+	wlan_cm_id cm_id;
+	struct qdf_mac_addr prev_bssid;
+	struct scan_cache_node *bss;
 };
 
 /**
@@ -335,14 +382,12 @@ struct fils_connect_rsp_params {
  * @bcn_probe_rsp: Raw beacon or probe rsp of connected AP
  * @assoc_req: assoc req IE pointer send during conenct
  * @assoc_rsq: assoc rsp IE received during connection
- * @ric_resp_ie: ric ie from assoc resp received during connection
  * @fills_ie: fills connection ie received during connection
  */
 struct wlan_connect_rsp_ies {
 	struct element_info bcn_probe_rsp;
 	struct element_info assoc_req;
 	struct element_info assoc_rsp;
-	struct element_info ric_resp_ie;
 #ifdef WLAN_FEATURE_FILS_SK
 	struct fils_connect_rsp_params *fils_ie;
 #endif
@@ -379,6 +424,30 @@ struct wlan_cm_connect_resp {
 #endif
 };
 
+/**
+ * struct wlan_cm_roam_rsp - Roam resp from VDEV mgr and will be sent to
+ * OSIF
+ * @vdev_id: vdev id
+ * @cm_id: Connection manager id
+ * @bssid: BSSID of the ap
+ * @ssid: SSID of the connection
+ * @freq: Channel frequency
+ * @reassoc_status: Reassoc status success or failure
+ * @reason: connect fail reason, valid only in case of failure
+ * @status_code: protocol status code received in auth/assoc resp
+ * @connect_ies: connect related IE required by osif to send to kernel
+ */
+struct wlan_cm_roam_resp {
+	uint8_t vdev_id;
+	wlan_cm_id cm_id;
+	struct qdf_mac_addr bssid;
+	struct wlan_ssid ssid;
+	qdf_freq_t freq;
+	QDF_STATUS reassoc_status;
+	enum wlan_cm_connect_fail_reason reason;
+	enum wlan_status_code status_code;
+	struct wlan_connect_rsp_ies connect_ies;
+};
 
 /**
  * struct wlan_cm_discon_rsp - disconnect resp from VDEV mgr and will be sent to
@@ -396,11 +465,13 @@ struct wlan_cm_discon_rsp {
  * @CM_NONE: No active serialisation command
  * @CM_CONNECT_ACTIVE: Connect active in serialisation
  * @CM_DISCONNECT_ACTIVE: DicConnect active in serialisation
+ * @CM_ROAM_ACTIVE: Roam active in serialisation
  */
 enum wlan_cm_active_request_type {
 	CM_NONE,
 	CM_CONNECT_ACTIVE,
 	CM_DISCONNECT_ACTIVE,
+	CM_ROAM_ACTIVE,
 };
 
 #endif /* FEATURE_CM_ENABLE */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -243,9 +243,13 @@ enum WMI_HOST_TWT_COMMAND {
  *                 - the quotient of wake_intvl_us/wake_intvl_mantis must be
  *                   2 to N-th(0<=N<=31) power,
  *                   i.e., wake_intvl_us/wake_intvl_mantis == 2^N, 0<=N<=31
+ * @min_wake_intvl_us: Min tolerance limit of TWT wake interval
+ * @max_wake_intvl_us: Max tolerance limit of TWT wake interval
  * @wake_dura_us: TWT Wake Duration in units of us, must be <= 0xFFFF
  *                wake_dura_us must be divided evenly by 256,
  *                i.e., wake_dura_us % 256 == 0
+ * @min_wake_dura_us: Min tolerance limit of TWT wake duration.
+ * @max_wake_dura_us: Max tolerance limit of TWT wake duration.
  * @sp_offset_us: this long time after TWT setup the 1st SP will start.
  * @twt_cmd: cmd from enum WMI_HOST_TWT_COMMAND
  * @flag_bcast: 0 means Individual TWT,
@@ -268,7 +272,11 @@ struct wmi_twt_add_dialog_param {
 	uint32_t dialog_id;
 	uint32_t wake_intvl_us;
 	uint32_t wake_intvl_mantis;
+	uint32_t min_wake_intvl_us;
+	uint32_t max_wake_intvl_us;
 	uint32_t wake_dura_us;
+	uint32_t min_wake_dura_us;
+	uint32_t max_wake_dura_us;
 	uint32_t sp_offset_us;
 	enum WMI_HOST_TWT_COMMAND twt_cmd;
 	uint32_t
@@ -377,17 +385,20 @@ struct wmi_twt_del_dialog_param {
 #endif
 };
 
-/* status code of deleting TWT dialog
- * WMI_HOST_DEL_TWT_STATUS_OK: deleting TWT dialog successfully completed
- * WMI_HOST_DEL_TWT_STATUS_DIALOG_ID_NOT_EXIST: TWT dialog ID not exists
- * WMI_HOST_DEL_TWT_STATUS_INVALID_PARAM: invalid parameters
- * WMI_HOST_DEL_TWT_STATUS_DIALOG_ID_BUSY: FW is in the process of handling
- *                                    this dialog
- * WMI_HOST_DEL_TWT_STATUS_NO_RESOURCE: FW resource exhausted
- * WMI_HOST_DEL_TWT_STATUS_NO_ACK: peer AP/STA did not ACK the request/response
- *                            frame
- * WMI_HOST_DEL_TWT_STATUS_UNKNOWN_ERROR: deleting TWT dialog failed with an
- *                            unknown reason
+/**
+ * enum WMI_HOST_DEL_TWT_STATUS - status code of deleting TWT dialog
+ * @WMI_HOST_DEL_TWT_STATUS_OK: deleting TWT dialog successfully completed
+ * @WMI_HOST_DEL_TWT_STATUS_DIALOG_ID_NOT_EXIST: TWT dialog ID not exists
+ * @WMI_HOST_DEL_TWT_STATUS_INVALID_PARAM: invalid parameters
+ * @WMI_HOST_DEL_TWT_STATUS_DIALOG_ID_BUSY: FW is in the process of handling
+ * this dialog
+ * @WMI_HOST_DEL_TWT_STATUS_NO_RESOURCE: FW resource exhausted
+ * @WMI_HOST_DEL_TWT_STATUS_NO_ACK: peer AP/STA did not ACK the request/response
+ * frame
+ * @WMI_HOST_DEL_TWT_STATUS_UNKNOWN_ERROR: deleting TWT dialog failed with an
+ * unknown reason
+ * @WMI_HOST_DEL_TWT_STATUS_PEER_INIT_TEARDOWN: Peer initiated TWT teardown
+ * @WMI_HOST_DEL_TWT_STATUS_ROAMING: TWT teardown due to roaming.
  */
 enum WMI_HOST_DEL_TWT_STATUS {
 	WMI_HOST_DEL_TWT_STATUS_OK,
@@ -397,6 +408,8 @@ enum WMI_HOST_DEL_TWT_STATUS {
 	WMI_HOST_DEL_TWT_STATUS_NO_RESOURCE,
 	WMI_HOST_DEL_TWT_STATUS_NO_ACK,
 	WMI_HOST_DEL_TWT_STATUS_UNKNOWN_ERROR,
+	WMI_HOST_DEL_TWT_STATUS_PEER_INIT_TEARDOWN,
+	WMI_HOST_DEL_TWT_STATUS_ROAMING,
 };
 
 /**
@@ -511,12 +524,16 @@ enum WMI_HOST_NUDGE_TWT_STATUS {
  * @peer_macaddr: Peer mac address
  * @dialog_id: TWT dialog ID
  * @status: refer to WMI_HOST_PAUSE_TWT_STATUS
+ * @next_twt_tsf_us_lo: TSF lower bits (31:0) of next wake time
+ * @next_twt_tsf_us_hi: TSF higher bits (32:63) of next wake time
  */
 struct wmi_twt_nudge_dialog_complete_event_param {
 	uint32_t vdev_id;
 	uint8_t  peer_macaddr[QDF_MAC_ADDR_SIZE];
 	uint32_t dialog_id;
 	enum WMI_HOST_NUDGE_TWT_STATUS status;
+	uint32_t next_twt_tsf_us_lo;
+	uint32_t next_twt_tsf_us_hi;
 };
 
 /**
@@ -572,6 +589,14 @@ struct wmi_twt_resume_dialog_complete_event_param {
 	uint8_t  peer_macaddr[QDF_MAC_ADDR_SIZE];
 	uint32_t dialog_id;
 	uint32_t status;
+};
+
+/**
+ * struct wmi_twt_notify_event_param -
+ * @vdev_id: VDEV identifier
+ */
+struct wmi_twt_notify_event_param {
+	uint32_t vdev_id;
 };
 
 #ifdef WLAN_SUPPORT_BCAST_TWT

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -38,6 +38,7 @@
 #include <linux/tcp.h>
 #include <qdf_util.h>
 #include <qdf_nbuf_frag.h>
+#include "qdf_time.h"
 
 /*
  * Use socket buffer as the underlying implementation as skbuf .
@@ -2533,6 +2534,28 @@ static inline uint32_t __qdf_nbuf_get_mark(__qdf_nbuf_t buf)
 static inline qdf_size_t __qdf_nbuf_get_data_len(__qdf_nbuf_t nbuf)
 {
 	return (skb_end_pointer(nbuf) - nbuf->data);
+}
+
+/**
+ * __qdf_nbuf_get_gso_segs() - Return the number of gso segments
+ * @skb: Pointer to network buffer
+ *
+ * Return: Return the number of gso segments
+ */
+static inline uint16_t __qdf_nbuf_get_gso_segs(struct sk_buff *skb)
+{
+	return skb_shinfo(skb)->gso_segs;
+}
+
+/*
+ * __qdf_nbuf_net_timedelta() - get time delta
+ * @t: time as __qdf_ktime_t object
+ *
+ * Return: time delta as ktime_t object
+ */
+static inline qdf_ktime_t __qdf_nbuf_net_timedelta(qdf_ktime_t t)
+{
+	return net_timedelta(t);
 }
 
 #ifdef CONFIG_NBUF_AP_PLATFORM

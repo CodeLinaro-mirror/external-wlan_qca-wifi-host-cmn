@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -24,6 +24,11 @@
 #define _WLAN_CMN_IEEE80211_H_
 #include <qdf_types.h>
 #include <osdep.h>
+
+/* Assoc resp IE offset Capability(2) + AID(2) + Status Code(2) */
+#define WLAN_ASSOC_RSP_IES_OFFSET 6
+/* Assoc req IE offset - Capability(2) + LI(2) */
+#define WLAN_ASSOC_REQ_IES_OFFSET 4
 
 #define IEEE80211_CCMP_HEADERLEN    8
 #define IEEE80211_HT_CTRL_LEN       4
@@ -1830,6 +1835,8 @@ is_bwnss_oui(uint8_t *frm)
 	return (frm[1] > 3) && (LE_READ_4(frm + 2) ==
 		((ATH_OUI_BW_NSS_MAP_TYPE << 24) | ATH_OUI));
 }
+
+#define WLAN_BWNSS_MAP_OFFSET 6
 
 /**
  * is_he_cap_oui() - If vendor IE is HE CAP OUI

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
  *
  *
  * Permission to use, copy, modify, and/or distribute this software for
@@ -87,6 +87,7 @@ struct dbr_module_config;
 #endif
 
 #ifdef QCA_SUPPORT_CP_STATS
+#include <wlan_cp_stats_public_structs.h>
 
 /**
  * typedef cp_stats_event - Definition of cp stats event
@@ -112,18 +113,26 @@ typedef struct wake_lock_stats stats_wake_lock;
 /**
  * struct wlan_lmac_if_cp_stats_tx_ops - defines southbound tx callbacks for
  * control plane statistics component
- * @cp_stats_attach:	function pointer to register events from FW
- * @cp_stats_detach:	function pointer to unregister events from FW
+ * @cp_stats_attach: function pointer to register events from FW
+ * @cp_stats_detach: function pointer to unregister events from FW
+ * @cp_stats_legacy_attach: function pointer to register legacy stats events
+ *                          from FW
+ * @cp_stats_legacy_detach: function pointer to unregister legacy stats events
+ *                          from FW
  * @inc_wake_lock_stats: function pointer to increase wake lock stats
  * @send_req_stats: function pointer to send request stats command to FW
  * @send_req_peer_stats: function pointer to send request peer stats command
  *                       to FW
  * @set_pdev_stats_update_period: function pointer to set pdev stats update
  *                                period to FW
+ * @send_req_infra_cp_stats: function pointer to send infra cp stats request
+ *                           command to FW
  */
 struct wlan_lmac_if_cp_stats_tx_ops {
 	QDF_STATUS (*cp_stats_attach)(struct wlan_objmgr_psoc *psoc);
 	QDF_STATUS (*cp_stats_detach)(struct wlan_objmgr_psoc *posc);
+	QDF_STATUS (*cp_stats_legacy_attach)(struct wlan_objmgr_psoc *psoc);
+	QDF_STATUS (*cp_stats_legacy_detach)(struct wlan_objmgr_psoc *psoc);
 	void (*inc_wake_lock_stats)(uint32_t reason,
 				    stats_wake_lock *stats,
 				    uint32_t *unspecified_wake_count);
@@ -135,17 +144,28 @@ struct wlan_lmac_if_cp_stats_tx_ops {
 	QDF_STATUS (*set_pdev_stats_update_period)(
 					struct wlan_objmgr_psoc *psoc,
 					uint8_t pdev_id, uint32_t val);
+#ifdef WLAN_SUPPORT_INFRA_CTRL_PATH_STATS
+	QDF_STATUS (*send_req_infra_cp_stats)(
+					struct wlan_objmgr_psoc *psoc,
+					struct infra_cp_stats_cmd_info *req);
+#endif
 };
 
 /**
  * struct wlan_lmac_if_cp_stats_rx_ops - defines southbound rx callbacks for
  * control plane statistics component
  * @cp_stats_rx_event_handler:	function pointer to rx FW events
+ * @process_stats_event: function pointer to process stats event
  */
 struct wlan_lmac_if_cp_stats_rx_ops {
 	QDF_STATUS (*cp_stats_rx_event_handler)(struct wlan_objmgr_vdev *vdev);
 	QDF_STATUS (*process_stats_event)(struct wlan_objmgr_psoc *psoc,
-					  cp_stats_event *ev);
+					  struct stats_event *ev);
+#ifdef WLAN_SUPPORT_INFRA_CTRL_PATH_STATS
+	QDF_STATUS
+	(*process_infra_stats_event)(struct wlan_objmgr_psoc *psoc,
+				     struct infra_cp_stats_event *infra_event);
+#endif /* WLAN_SUPPORT_INFRA_CTRL_PATH_STATS */
 };
 #endif
 
@@ -594,6 +614,7 @@ struct spectral_tgt_ops;
  *                                       on the previous state
  * @sptrlto_register_events: Registration of WMI events for Spectral
  * @sptrlto_unregister_events: Unregistration of WMI events for Spectral
+ * @sptrlto_init_pdev_feature_caps: Initialize spectral feature capabilities
  **/
 struct wlan_lmac_if_sptrl_tx_ops {
 	void *(*sptrlto_pdev_spectral_init)(struct wlan_objmgr_pdev *pdev);
@@ -656,6 +677,8 @@ struct wlan_lmac_if_sptrl_tx_ops {
 		struct wlan_objmgr_pdev *pdev);
 	QDF_STATUS (*sptrlto_register_events)(struct wlan_objmgr_psoc *psoc);
 	QDF_STATUS (*sptrlto_unregister_events)(struct wlan_objmgr_psoc *psoc);
+	QDF_STATUS (*sptrlto_init_pdev_feature_caps)(
+		struct wlan_objmgr_pdev *pdev);
 };
 #endif /* WLAN_CONV_SPECTRAL_ENABLE */
 
@@ -808,16 +831,24 @@ struct wlan_lmac_if_ftm_rx_ops {
  *                  pointers for regulatory component
  * @register_master_handler: pointer to register event handler
  * @unregister_master_handler:  pointer to unregister event handler
+ * @register_master_ext_handler: pointer to register ext event handler
+ * @unregister_master_ext_handler: pointer to unregister ext event handler
  * @register_11d_new_cc_handler: pointer to register 11d cc event handler
  * @unregister_11d_new_cc_handler:  pointer to unregister 11d cc event handler
  * @send_ctl_info: call-back function to send CTL info to firmware
+ * @set_tpc_power: send transmit power control info to firmware
  */
 struct wlan_lmac_if_reg_tx_ops {
 	QDF_STATUS (*register_master_handler)(struct wlan_objmgr_psoc *psoc,
 					      void *arg);
 	QDF_STATUS (*unregister_master_handler)(struct wlan_objmgr_psoc *psoc,
 						void *arg);
-
+#ifdef CONFIG_BAND_6GHZ
+	QDF_STATUS (*register_master_ext_handler)(struct wlan_objmgr_psoc *psoc,
+						  void *arg);
+	QDF_STATUS (*unregister_master_ext_handler)
+				(struct wlan_objmgr_psoc *psoc, void *arg);
+#endif
 	QDF_STATUS (*set_country_code)(struct wlan_objmgr_psoc *psoc,
 						void *arg);
 	QDF_STATUS (*fill_umac_legacy_chanlist)(struct wlan_objmgr_pdev *pdev,
@@ -845,6 +876,9 @@ struct wlan_lmac_if_reg_tx_ops {
 					      uint8_t pdev_id, uint8_t *phy_id);
 	QDF_STATUS (*get_pdev_id_from_phy_id)(struct wlan_objmgr_psoc *psoc,
 					      uint8_t phy_id, uint8_t *pdev_id);
+	QDF_STATUS (*set_tpc_power)(struct wlan_objmgr_psoc *psoc,
+				    uint8_t vdev_id,
+				    struct reg_tpc_power_info *param);
 };
 
 /**
@@ -943,7 +977,7 @@ struct wlan_lmac_if_dfs_tx_ops {
  * @tgt_is_tgt_type_qca9888: To check QCA9888 target type.
  * @tgt_is_tgt_type_adrastea: To check QCS40X target type.
  * @tgt_is_tgt_type_qcn9000: To check QCN9000 (Pine) target type.
- * @tgt_is_tgt_type_qcn9100: To check QCN9100 (Spruce) target type.
+ * @tgt_is_tgt_type_qcn6122: To check QCN6122 (Spruce) target type.
  * @tgt_get_tgt_type:        Get target type
  * @tgt_get_tgt_version:     Get target version
  * @tgt_get_tgt_revision:    Get target revision
@@ -955,7 +989,7 @@ struct wlan_lmac_if_target_tx_ops {
 	bool (*tgt_is_tgt_type_qca9888)(uint32_t);
 	bool (*tgt_is_tgt_type_adrastea)(uint32_t);
 	bool (*tgt_is_tgt_type_qcn9000)(uint32_t);
-	bool (*tgt_is_tgt_type_qcn9100)(uint32_t);
+	bool (*tgt_is_tgt_type_qcn6122)(uint32_t);
 	uint32_t (*tgt_get_tgt_type)(struct wlan_objmgr_psoc *psoc);
 	uint32_t (*tgt_get_tgt_version)(struct wlan_objmgr_psoc *psoc);
 	uint32_t (*tgt_get_tgt_revision)(struct wlan_objmgr_psoc *psoc);
@@ -1154,6 +1188,10 @@ struct wlan_lmac_if_mgmt_txrx_rx_ops {
 struct wlan_lmac_if_reg_rx_ops {
 	QDF_STATUS (*master_list_handler)(struct cur_regulatory_info
 					  *reg_info);
+#ifdef CONFIG_BAND_6GHZ
+	QDF_STATUS (*master_list_ext_handler)(struct cur_regulatory_info
+					      *reg_info);
+#endif
 	QDF_STATUS (*reg_11d_new_cc_handler)(struct wlan_objmgr_psoc *psoc,
 			struct reg_11d_new_country *reg_11d_new_cc);
 	QDF_STATUS (*reg_set_regdb_offloaded)(struct wlan_objmgr_psoc *psoc,
@@ -1390,7 +1428,10 @@ struct wlan_lmac_if_cfr_rx_ops {
  * @sptrlro_get_psoc_target_handle: Get Spectral handle for psoc target
  * private data
  * @sptrlro_vdev_get_chan_freq_seg2: Get secondary 80 center frequency
- * @sptrlro_spectral_is_feature_disabled: Check if spectral feature is disabled
+ * @sptrlro_spectral_is_feature_disabled_pdev: Check if spectral feature is
+ * disabled for a given pdev
+ * @sptrlro_spectral_is_feature_disabled_psoc: Check if spectral feature is
+ * disabled for a given psoc
  */
 struct wlan_lmac_if_sptrl_rx_ops {
 	void * (*sptrlro_get_pdev_target_handle)(struct wlan_objmgr_pdev *pdev);
@@ -1403,7 +1444,9 @@ struct wlan_lmac_if_sptrl_rx_ops {
 	int (*sptrlro_vdev_get_sec20chan_freq_mhz)(
 			struct wlan_objmgr_vdev *vdev,
 			uint16_t *sec20chan_freq);
-	bool (*sptrlro_spectral_is_feature_disabled)(
+	bool (*sptrlro_spectral_is_feature_disabled_pdev)(
+			struct wlan_objmgr_pdev *pdev);
+	bool (*sptrlro_spectral_is_feature_disabled_psoc)(
 			struct wlan_objmgr_psoc *psoc);
 };
 #endif /* WLAN_CONV_SPECTRAL_ENABLE */

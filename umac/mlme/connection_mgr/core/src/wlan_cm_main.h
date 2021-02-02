@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015, 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2015, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -118,6 +118,20 @@ struct cm_connect_req {
 };
 
 /**
+ * struct cm_roam_req - roam req stored in connect manager
+ * @cm_id: Connect manager id
+ * @req: roam req from osif
+ * @candidate_list: candidate list
+ * @cur_candidate: current candidate
+ */
+struct cm_roam_req {
+	wlan_cm_id cm_id;
+	struct wlan_cm_roam_req req;
+	qdf_list_t *candidate_list;
+	struct scan_cache_node *cur_candidate;
+};
+
+/**
  * struct cm_disconnect_req - disconnect req
  * @cm_id: Connect manager id
  * @req: disconnect connect req from osif
@@ -135,7 +149,8 @@ struct cm_disconnect_req {
  * with a commands pending before it, ie this is the latest command which failed
  * but still some operation(req) is pending.
  * @connect_req: connect req
- * @disconnect_req: disconnect req
+ * @discon_req: disconnect req
+ * @roam_req: roam req
  */
 struct cm_req {
 	qdf_list_node_t node;
@@ -144,6 +159,7 @@ struct cm_req {
 	union {
 		struct cm_connect_req connect_req;
 		struct cm_disconnect_req discon_req;
+		struct cm_roam_req roam_req;
 	};
 };
 
@@ -181,6 +197,7 @@ struct connect_ies {
  * @connect_timeout: Connect timeout value in milliseconds
  * @scan_requester_id: scan requester id.
  * @disconnect_complete: disconnect completion wait event
+ * @ext_cm_ptr: connection manager ext pointer
  */
 struct cnx_mgr {
 	struct wlan_objmgr_vdev *vdev;
@@ -201,6 +218,7 @@ struct cnx_mgr {
 	uint32_t connect_timeout;
 	wlan_scan_requester scan_requester_id;
 	qdf_event_t disconnect_complete;
+	cm_ext_t *ext_cm_ptr;
 };
 
 /**

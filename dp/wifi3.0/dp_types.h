@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -370,9 +370,15 @@ struct dp_rx_nbuf_frag_info {
 /**
  * enum dp_ctxt - context type
  * @DP_PDEV_TYPE: PDEV context
+ * @DP_RX_RING_HIST_TYPE: Datapath rx ring history
+ * @DP_RX_ERR_RING_HIST_TYPE: Datapath rx error ring history
+ * @DP_RX_REINJECT_RING_HIST_TYPE: Datapath reinject ring history
  */
 enum dp_ctxt_type {
-	DP_PDEV_TYPE
+	DP_PDEV_TYPE,
+	DP_RX_RING_HIST_TYPE,
+	DP_RX_ERR_RING_HIST_TYPE,
+	DP_RX_REINJECT_RING_HIST_TYPE,
 };
 
 /**
@@ -989,6 +995,8 @@ struct dp_soc_stats {
 			uint32_t msdu_continuation_err;
 			/* REO OOR eapol drop count */
 			uint32_t reo_err_oor_eapol_drop;
+			/* Non Eapol packet drop count due to peer not authorized  */
+			uint32_t peer_unauth_rx_pkt_drop;
 		} err;
 
 		/* packet count per core - per ring */
@@ -1581,6 +1589,8 @@ struct dp_soc {
 		void *ipa_wbm_ring_base_vaddr;
 		uint32_t ipa_wbm_ring_size;
 		qdf_dma_addr_t ipa_wbm_tp_paddr;
+		/* WBM2SW HP shadow paddr */
+		qdf_dma_addr_t ipa_wbm_hp_shadow_paddr;
 
 		/* TX buffers populated into the WBM ring */
 		void **tx_buf_pool_vaddr_unaligned;
@@ -1708,6 +1718,10 @@ struct dp_soc {
 
 #ifdef WLAN_DP_FEATURE_SW_LATENCY_MGR
 	struct dp_swlm swlm;
+#endif
+#ifdef FEATURE_RUNTIME_PM
+	/* Dp runtime refcount */
+	qdf_atomic_t dp_runtime_refcount;
 #endif
 };
 
@@ -2149,6 +2163,8 @@ struct dp_pdev {
 
 	/* Packet log mode */
 	uint8_t rx_pktlog_mode;
+	/* Enable pktlog logging cbf */
+	bool rx_pktlog_cbf;
 
 	/* WDI event handlers */
 	struct wdi_event_subscribe_t **wdi_event_list;
@@ -2321,6 +2337,8 @@ struct dp_pdev {
 	/* HTT stats debugfs params */
 	struct pdev_htt_stats_dbgfs_cfg *dbgfs_cfg;
 #endif
+	/* Flag to inidicate monitor rings are initialized */
+	uint8_t pdev_mon_init;
 };
 
 struct dp_peer;
@@ -2394,6 +2412,9 @@ struct dp_vdev {
 	 * skipped
 	 */
 	uint8_t skip_sw_tid_classification;
+
+	/* Flag to enable peer authorization */
+	uint8_t peer_authorize;
 
 	/* AST hash value for BSS peer in HW valid for STA VAP*/
 	uint16_t bss_ast_hash;
@@ -2573,6 +2594,15 @@ struct dp_vdev {
 	qdf_atomic_t ref_cnt;
 	qdf_atomic_t mod_refs[DP_MOD_ID_MAX];
 	uint8_t num_latency_critical_conn;
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+	uint8_t peer_tid_latency_enabled;
+	/* tid latency configuration parameters */
+	struct {
+		uint32_t service_interval;
+		uint32_t burst_size;
+		uint8_t latency_tid;
+	} mesh_tid_latency_config;
+#endif
 };
 
 
@@ -2692,6 +2722,26 @@ struct dp_wds_ext_peer {
 	unsigned long init;
 };
 #endif /* QCA_SUPPORT_WDS_EXTENDED */
+
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+/*Advanced Mesh latency feature based macros */
+/*
+ * struct dp_peer_mesh_latency parameter - Mesh latency related
+ * parameters. This data is updated per peer per TID based on
+ * the flow tuple classification in external rule database
+ * during packet processing.
+ * @service_interval - Service interval associated with TID
+ * @burst_size - Burst size additive over multiple flows
+ * @ac - custom ac derived from service interval
+ * @msduq - MSDU queue number within TID
+ */
+struct dp_peer_mesh_latency_parameter {
+	uint32_t service_interval;
+	uint32_t burst_size;
+	uint8_t ac;
+	uint8_t msduq;
+};
+#endif
 
 /* Peer structure for data path state */
 struct dp_peer {
@@ -2817,6 +2867,9 @@ struct dp_peer {
 #ifdef QCA_SUPPORT_WDS_EXTENDED
 	struct dp_wds_ext_peer wds_ext;
 	ol_txrx_rx_fp osif_rx;
+#endif
+#ifdef WLAN_SUPPORT_MESH_LATENCY
+	struct dp_peer_mesh_latency_parameter mesh_latency_params[DP_MAX_TIDS];
 #endif
 };
 
@@ -2988,6 +3041,8 @@ struct dp_rx_fst {
 	struct dp_soc *soc_hdl;
 	qdf_atomic_t fse_cache_flush_posted;
 	qdf_timer_t fse_cache_flush_timer;
+	/* Allow FSE cache flush cmd to FW */
+	bool fse_cache_flush_allow;
 	struct fse_cache_flush_history cache_fl_rec[MAX_FSE_CACHE_FL_HST];
 	/* FISA DP stats */
 	struct dp_fisa_stats stats;
@@ -3002,6 +3057,7 @@ struct dp_rx_fst {
 	qdf_event_t cmem_resp_event;
 	bool flow_deletion_supported;
 	bool fst_in_cmem;
+	bool pm_suspended;
 };
 
 #endif /* WLAN_SUPPORT_RX_FISA */

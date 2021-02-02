@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -59,6 +59,13 @@
 /* l2 header pad byte in case of Raw frame is Zero and 2 in non raw */
 #define DP_RX_MON_RAW_L2_HDR_PAD_BYTE (0)
 #define DP_RX_MON_NONRAW_L2_HDR_PAD_BYTE (2)
+
+#define dp_rx_mon_dest_alert(params...) QDF_TRACE_FATAL(QDF_MODULE_ID_DP_RX_MON_DEST, params)
+#define dp_rx_mon_dest_err(params...) QDF_TRACE_ERROR(QDF_MODULE_ID_DP_RX_MON_DEST, params)
+#define dp_rx_mon_dest_warn(params...) QDF_TRACE_WARN(QDF_MODULE_ID_DP_RX_MON_DEST, params)
+#define dp_rx_mon_dest_info(params...) \
+	__QDF_TRACE_FL(QDF_TRACE_LEVEL_INFO_HIGH, QDF_MODULE_ID_DP_RX_MON_DEST, ## params)
+#define dp_rx_mon_dest_debug(params...) QDF_TRACE_DEBUG(QDF_MODULE_ID_DP_RX_MON_DEST, params)
 
 /**
  * enum dp_mon_reap_status - monitor status ring ppdu status
@@ -130,6 +137,24 @@ void dp_rx_pdev_mon_status_buffers_free(struct dp_pdev *pdev, uint32_t mac_id);
 QDF_STATUS
 dp_rx_pdev_mon_buf_buffers_alloc(struct dp_pdev *pdev, uint32_t mac_id,
 				 bool delayed_replenish);
+QDF_STATUS
+dp_rx_pdev_mon_buf_desc_pool_alloc(struct dp_pdev *pdev, uint32_t mac_id);
+void
+dp_rx_pdev_mon_buf_desc_pool_init(struct dp_pdev *pdev, uint32_t mac_id);
+
+/*
+ * dp_rx_populate_cbf_hdr - Send CBF frame with htt header
+ * @soc: Datapath soc handle
+ * @mac_id: Datapath mac id
+ * @event: WDI event
+ * @mpdu: mpdu buffer
+ * @msdu_timesstamp: time stamp
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS dp_rx_populate_cbf_hdr(struct dp_soc *soc,
+				  uint32_t mac_id, uint32_t event,
+				  qdf_nbuf_t data, uint32_t msdu_timestamp);
 
 /**
  * dp_rx_mon_handle_status_buf_done () - Handle DMA not done case for

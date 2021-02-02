@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -3372,6 +3372,18 @@ static inline uint32_t qdf_nbuf_get_tso_num_seg(qdf_nbuf_t nbuf)
 }
 
 /**
+ * qdf_nbuf_get_gso_segs() - Return the number of gso segments in
+ * nbuf
+ * @nbuf: Network buffer
+ *
+ * Return: number of gso segments in nbuf
+ */
+static inline uint16_t qdf_nbuf_get_gso_segs(qdf_nbuf_t nbuf)
+{
+	return __qdf_nbuf_get_gso_segs(nbuf);
+}
+
+/**
  * qdf_nbuf_inc_users() - function to increment the number of
  * users referencing this network buffer
  *
@@ -3619,58 +3631,6 @@ static inline void
 qdf_nbuf_reg_free_cb(qdf_nbuf_free_t cb_func_ptr)
 {
 	 __qdf_nbuf_reg_free_cb(cb_func_ptr);
-}
-
-/**
- * qdf_nbuf_set_timestamp() - set the timestamp for frame
- *
- * @buf: sk buff
- *
- * Return: void
- */
-static inline void
-qdf_nbuf_set_timestamp(struct sk_buff *skb)
-{
-	__qdf_nbuf_set_timestamp(skb);
-}
-
-/**
- * qdf_nbuf_get_timestamp() - get the timestamp for frame
- *
- * @buf: sk buff
- *
- * Return: timestamp stored in skb in ms
- */
-static inline uint64_t
-qdf_nbuf_get_timestamp(struct sk_buff *skb)
-{
-	return __qdf_nbuf_get_timestamp(skb);
-}
-
-/**
- * qdf_nbuf_get_timedelta_ms() - get time difference in ms
- *
- * @buf: sk buff
- *
- * Return: time difference ms
- */
-static inline uint64_t
-qdf_nbuf_get_timedelta_ms(struct sk_buff *skb)
-{
-	return __qdf_nbuf_get_timedelta_ms(skb);
-}
-
-/**
- * qdf_nbuf_get_timedelta_us() - get time difference in micro seconds
- *
- * @buf: sk buff
- *
- * Return: time difference in micro seconds
- */
-static inline uint64_t
-qdf_nbuf_get_timedelta_us(struct sk_buff *skb)
-{
-	return __qdf_nbuf_get_timedelta_us(skb);
 }
 
 /**
@@ -4034,6 +3994,77 @@ static inline void qdf_record_nbuf_nbytes(
 {
 }
 #endif /* CONFIG_WLAN_SYSFS_MEM_STATS */
+
+#ifdef ENHANCED_OS_ABSTRACTION
+/**
+ * qdf_nbuf_set_timestamp() - set the timestamp for frame
+ * @buf: pointer to network buffer
+ *
+ * Return: none
+ */
+void qdf_nbuf_set_timestamp(qdf_nbuf_t buf);
+
+/**
+ * qdf_nbuf_get_timestamp() - get the timestamp for frame
+ * @buf: pointer to network buffer
+ *
+ * Return: timestamp stored in skb in ms
+ */
+uint64_t qdf_nbuf_get_timestamp(qdf_nbuf_t buf);
+
+/**
+ * qdf_nbuf_get_timedelta_ms() - get time difference in ms
+ * @buf: pointer to network buffer
+ *
+ * Return: time difference ms
+ */
+uint64_t qdf_nbuf_get_timedelta_ms(qdf_nbuf_t buf);
+
+/**
+ * qdf_nbuf_get_timedelta_us() - get time difference in micro seconds
+ * @buf: pointer to network buffer
+ *
+ * Return: time difference in micro seconds
+ */
+uint64_t qdf_nbuf_get_timedelta_us(qdf_nbuf_t buf);
+
+/**
+ * qdf_nbuf_net_timedelta() - get time delta
+ * @t: time as qdf_ktime_t object
+ *
+ * Return: time delta as ktime_t object
+ */
+qdf_ktime_t qdf_nbuf_net_timedelta(qdf_ktime_t t);
+#else
+static inline void
+qdf_nbuf_set_timestamp(struct sk_buff *skb)
+{
+	__qdf_nbuf_set_timestamp(skb);
+}
+
+static inline uint64_t
+qdf_nbuf_get_timestamp(struct sk_buff *skb)
+{
+	return __qdf_nbuf_get_timestamp(skb);
+}
+
+static inline uint64_t
+qdf_nbuf_get_timedelta_ms(struct sk_buff *skb)
+{
+	return __qdf_nbuf_get_timedelta_ms(skb);
+}
+
+static inline uint64_t
+qdf_nbuf_get_timedelta_us(struct sk_buff *skb)
+{
+	return __qdf_nbuf_get_timedelta_us(skb);
+}
+
+static inline qdf_ktime_t qdf_nbuf_net_timedelta(qdf_ktime_t t)
+{
+	return __qdf_nbuf_net_timedelta(t);
+}
+#endif /* ENHANCED_OS_ABSTRACTION */
 
 #ifdef CONFIG_NBUF_AP_PLATFORM
 #include <i_qdf_nbuf_api_w.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -40,6 +40,9 @@
 #include "ce_tasklet.h"
 #include "targaddrs.h"
 #include "hif_exec.h"
+
+#define CNSS_RUNTIME_FILE "cnss_runtime_pm"
+#define CNSS_RUNTIME_FILE_PERM QDF_FILE_USR_READ
 
 #ifdef FEATURE_RUNTIME_PM
 /**
@@ -306,9 +309,11 @@ static void hif_runtime_pm_debugfs_create(struct hif_softc *scn)
 {
 	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
 
-	rpm_ctx->pm_dentry = debugfs_create_file("cnss_runtime_pm",
-						 0400, NULL, scn,
-						 &hif_pci_runtime_pm_fops);
+	rpm_ctx->pm_dentry = qdf_debugfs_create_entry(CNSS_RUNTIME_FILE,
+						      CNSS_RUNTIME_FILE_PERM,
+						      NULL,
+						      scn,
+						      &hif_pci_runtime_pm_fops);
 }
 
 /**
@@ -321,7 +326,7 @@ static void hif_runtime_pm_debugfs_remove(struct hif_softc *scn)
 {
 	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
 
-	debugfs_remove(rpm_ctx->pm_dentry);
+	qdf_debugfs_remove_file(rpm_ctx->pm_dentry);
 }
 
 /**
@@ -438,6 +443,7 @@ void hif_pm_runtime_open(struct hif_softc *scn)
 	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
 
 	spin_lock_init(&rpm_ctx->runtime_lock);
+	qdf_spinlock_create(&rpm_ctx->runtime_suspend_lock);
 	qdf_atomic_init(&rpm_ctx->pm_state);
 	hif_runtime_lock_init(&rpm_ctx->prevent_linkdown_lock,
 			      "prevent_linkdown_lock");
@@ -554,6 +560,8 @@ void hif_pm_runtime_close(struct hif_softc *scn)
 	hif_is_recovery_in_progress(scn) ?
 		hif_pm_runtime_sanitize_on_ssr_exit(scn) :
 		hif_pm_runtime_sanitize_on_exit(scn);
+
+	qdf_spinlock_destroy(&rpm_ctx->runtime_suspend_lock);
 }
 
 /**
@@ -730,6 +738,31 @@ void hif_process_runtime_suspend_failure(struct hif_opaque_softc *hif_ctx)
 	hif_runtime_pm_set_state_on(scn);
 }
 
+static void hif_pm_runtime_print_prevent_list(struct hif_softc *scn)
+{
+	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
+	struct hif_pm_runtime_lock *ctx;
+
+	hif_info("prevent_suspend_cnt %u", rpm_ctx->prevent_suspend_cnt);
+	list_for_each_entry(ctx, &rpm_ctx->prevent_suspend_list, list)
+		hif_info("%s", ctx->name);
+}
+
+static bool hif_pm_runtime_is_suspend_allowed(struct hif_softc *scn)
+{
+	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
+	bool ret;
+
+	if (!scn->hif_config.enable_runtime_pm)
+		return 0;
+
+	spin_lock_bh(&rpm_ctx->runtime_lock);
+	ret = (rpm_ctx->prevent_suspend_cnt == 0);
+	spin_unlock_bh(&rpm_ctx->runtime_lock);
+
+	return ret;
+}
+
 /**
  * hif_pre_runtime_suspend() - bookkeeping before beginning runtime suspend
  *
@@ -751,6 +784,14 @@ int hif_pre_runtime_suspend(struct hif_opaque_softc *hif_ctx)
 	}
 
 	hif_runtime_pm_set_state_suspending(scn);
+
+	/* keep this after set suspending */
+	if (!hif_pm_runtime_is_suspend_allowed(scn)) {
+		hif_info("Runtime PM not allowed now");
+		hif_pm_runtime_print_prevent_list(scn);
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
@@ -1114,6 +1155,8 @@ void hif_pm_runtime_get_noresume(struct hif_opaque_softc *hif_ctx,
  * hif_pm_runtime_get() - do a get opperation on the device
  * @hif_ctx: pointer of HIF context
  * @rtpm_dbgid: dbgid to trace who use it
+ * @is_critical_ctx: Indication if this function called via a
+ *		     critical context
  *
  * A get opperation will prevent a runtime suspend until a
  * corresponding put is done.  This api should be used when sending
@@ -1126,7 +1169,8 @@ void hif_pm_runtime_get_noresume(struct hif_opaque_softc *hif_ctx,
  *   otherwise an error code.
  */
 int hif_pm_runtime_get(struct hif_opaque_softc *hif_ctx,
-		       wlan_rtpm_dbgid rtpm_dbgid)
+		       wlan_rtpm_dbgid rtpm_dbgid,
+		       bool is_critical_ctx)
 {
 	struct hif_softc *scn = HIF_GET_SOFTC(hif_ctx);
 	struct hif_runtime_pm_ctx *rpm_ctx;
@@ -1171,8 +1215,11 @@ int hif_pm_runtime_get(struct hif_opaque_softc *hif_ctx,
 
 	if (pm_state == HIF_PM_RUNTIME_STATE_SUSPENDED ||
 	    pm_state == HIF_PM_RUNTIME_STATE_SUSPENDING) {
-		hif_info_high("Runtime PM resume is requested by %ps",
-			      (void *)_RET_IP_);
+		/* Do not log in performance path */
+		if (!is_critical_ctx) {
+			hif_info_high("Runtime PM resume is requested by %ps",
+				      (void *)_RET_IP_);
+		}
 		ret = -EAGAIN;
 	} else {
 		ret = -EBUSY;
@@ -1592,6 +1639,34 @@ bool hif_pm_runtime_is_suspended(struct hif_opaque_softc *hif_ctx)
 					HIF_PM_RUNTIME_STATE_SUSPENDED;
 }
 
+/*
+ * hif_pm_runtime_suspend_lock() - spin_lock on marking runtime suspend
+ * @hif_ctx: HIF context
+ *
+ * Return: void
+ */
+void hif_pm_runtime_suspend_lock(struct hif_opaque_softc *hif_ctx)
+{
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_ctx);
+	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
+
+	qdf_spin_lock_irqsave(&rpm_ctx->runtime_suspend_lock);
+}
+
+/*
+ * hif_pm_runtime_suspend_unlock() - spin_unlock on marking runtime suspend
+ * @hif_ctx: HIF context
+ *
+ * Return: void
+ */
+void hif_pm_runtime_suspend_unlock(struct hif_opaque_softc *hif_ctx)
+{
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_ctx);
+	struct hif_runtime_pm_ctx *rpm_ctx = hif_bus_get_rpm_ctx(scn);
+
+	qdf_spin_unlock_irqrestore(&rpm_ctx->runtime_suspend_lock);
+}
+
 /**
  * hif_pm_runtime_get_monitor_wake_intr() - API to get monitor_wake_intr
  * @hif_ctx: HIF context
@@ -1640,9 +1715,12 @@ void hif_pm_runtime_set_monitor_wake_intr(struct hif_opaque_softc *hif_ctx,
  */
 void hif_pm_runtime_check_and_request_resume(struct hif_opaque_softc *hif_ctx)
 {
-	if (hif_pm_runtime_get_monitor_wake_intr(hif_ctx)) {
-		hif_pm_runtime_set_monitor_wake_intr(hif_ctx, 0);
+	hif_pm_runtime_suspend_lock(hif_ctx);
+	if (hif_pm_runtime_is_suspended(hif_ctx)) {
+		hif_pm_runtime_suspend_unlock(hif_ctx);
 		hif_pm_runtime_request_resume(hif_ctx);
+	} else {
+		hif_pm_runtime_suspend_unlock(hif_ctx);
 	}
 }
 
@@ -1701,5 +1779,19 @@ qdf_time_t hif_pm_runtime_get_dp_rx_busy_mark(struct hif_opaque_softc *hif_ctx)
 
 	rpm_ctx = hif_bus_get_rpm_ctx(scn);
 	return rpm_ctx->dp_last_busy_timestamp;
+}
+
+void hif_pm_set_link_state(struct hif_opaque_softc *hif_handle, uint8_t val)
+{
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_handle);
+
+	qdf_atomic_set(&scn->pm_link_state, val);
+}
+
+uint8_t hif_pm_get_link_state(struct hif_opaque_softc *hif_handle)
+{
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_handle);
+
+	return qdf_atomic_read(&scn->pm_link_state);
 }
 #endif /* FEATURE_RUNTIME_PM */

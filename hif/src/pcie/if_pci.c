@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -21,9 +21,6 @@
 #include <linux/interrupt.h>
 #include <linux/if_arp.h>
 #include <linux/of_pci.h>
-#ifdef CONFIG_PCI_MSM
-#include <linux/msm_pcie.h>
-#endif
 #include <linux/version.h>
 #include "hif_io32.h"
 #include "if_pci.h"
@@ -60,6 +57,8 @@
 #include "wlan_cfg.h"
 #include "qdf_hang_event_notifier.h"
 #include "qdf_platform.h"
+#include "qal_devnode.h"
+#include "qdf_irq.h"
 
 /* Maximum ms timeout for host to wake up target */
 #define PCIE_WAKE_TIMEOUT 1000
@@ -168,11 +167,7 @@ static inline int hif_get_pci_slot(struct hif_softc *scn)
 		 */
 		pcierp_node = mhi_node->parent;
 		pcie_node = pcierp_node->parent;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0))
-		pci_id = 0;
-#else
-		pci_id = of_get_pci_domain_nr(pcie_node);
-#endif
+		qal_devnode_fetch_pci_domain_id(pcie_node, &pci_id);
 		if (pci_id < 0 || pci_id >= WLAN_CFG_MAX_PCIE_GROUPS) {
 			hif_err("pci_id: %d is invalid", pci_id);
 			QDF_ASSERT(0);
@@ -1716,7 +1711,7 @@ int hif_pci_bus_configure(struct hif_softc *hif_sc)
 	if (((hif_sc->target_info.target_type == TARGET_TYPE_QCA8074) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA8074V2) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA5018) ||
-	     (hif_sc->target_info.target_type == TARGET_TYPE_QCN9100) ||
+	     (hif_sc->target_info.target_type == TARGET_TYPE_QCN6122) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA6018)) &&
 	    (hif_sc->bus_type == QDF_BUS_TYPE_AHB)) {
 		hif_sc->per_ce_irq = true;
@@ -1738,7 +1733,7 @@ int hif_pci_bus_configure(struct hif_softc *hif_sc)
 	if (((hif_sc->target_info.target_type == TARGET_TYPE_QCA8074) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA8074V2) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA5018) ||
-	     (hif_sc->target_info.target_type == TARGET_TYPE_QCN9100) ||
+	     (hif_sc->target_info.target_type == TARGET_TYPE_QCN6122) ||
 	     (hif_sc->target_info.target_type == TARGET_TYPE_QCA6018)) &&
 	    (hif_sc->bus_type == QDF_BUS_TYPE_PCI))
 		hif_debug("Skip irq config for PCI based 8074 target");
@@ -2096,8 +2091,11 @@ static void hif_pci_deconfigure_grp_irq(struct hif_softc *scn)
 			hif_ext_group->irq_requested = false;
 			for (j = 0; j < hif_ext_group->numirq; j++) {
 				irq = hif_ext_group->os_irq[j];
-				if (scn->irq_unlazy_disable)
-					irq_clear_status_flags(irq, IRQ_DISABLE_UNLAZY);
+				if (scn->irq_unlazy_disable) {
+					qdf_dev_clear_irq_status_flags(
+							irq,
+							QDF_IRQ_DISABLE_UNLAZY);
+				}
 				pfrm_free_irq(scn->qdf_dev->dev,
 					      irq, hif_ext_group);
 			}
@@ -2251,9 +2249,9 @@ struct device *hif_pci_get_dev(struct hif_softc *scn)
 
 #define OL_ATH_PCI_PM_CONTROL 0x44
 
-#if defined(CONFIG_PCI_MSM)
+#ifdef CONFIG_PLD_PCIE_CNSS
 /**
- * hif_bus_prevent_linkdown(): allow or permit linkdown
+ * hif_pci_prevent_linkdown(): allow or permit linkdown
  * @flag: true prevents linkdown, false allows
  *
  * Calls into the platform driver to vote against taking down the
@@ -2275,8 +2273,6 @@ void hif_pci_prevent_linkdown(struct hif_softc *scn, bool flag)
 #else
 void hif_pci_prevent_linkdown(struct hif_softc *scn, bool flag)
 {
-	hif_info("wlan: %s pcie power collapse", (flag ? "disable" : "enable"));
-	hif_runtime_prevent_linkdown(scn, flag);
 }
 #endif
 
@@ -2502,16 +2498,6 @@ void hif_pci_reset_soc(struct hif_softc *hif_sc)
 #endif
 }
 
-#ifdef CONFIG_PCI_MSM
-static inline void hif_msm_pcie_debug_info(struct hif_pci_softc *sc)
-{
-	msm_pcie_debug_info(sc->pdev, 13, 1, 0, 0, 0);
-	msm_pcie_debug_info(sc->pdev, 13, 2, 0, 0, 0);
-}
-#else
-static inline void hif_msm_pcie_debug_info(struct hif_pci_softc *sc) {};
-#endif
-
 /**
  * hif_log_soc_wakeup_timeout() - API to log PCIe and SOC Info
  * @sc: HIF PCIe Context
@@ -2562,7 +2548,6 @@ static int hif_log_soc_wakeup_timeout(struct hif_pci_softc *sc)
 							RTC_STATE_ADDRESS));
 
 	hif_info("wakeup target");
-	hif_msm_pcie_debug_info(sc);
 
 	if (!cfg->enable_self_recovery)
 		QDF_BUG(0);
@@ -2933,6 +2918,7 @@ static int hif_ce_msi_configure_irq(struct hif_softc *scn)
 
 		scn->wake_irq = pld_get_msi_irq(scn->qdf_dev->dev,
 						msi_irq_start);
+		scn->wake_irq_type = HIF_PM_MSI_WAKE;
 
 		ret = pfrm_request_irq(scn->qdf_dev->dev, scn->wake_irq,
 				       hif_wake_interrupt_handler,
@@ -2994,6 +2980,7 @@ free_wake_irq:
 		pfrm_free_irq(scn->qdf_dev->dev,
 			      scn->wake_irq, scn->qdf_dev->dev);
 		scn->wake_irq = 0;
+		scn->wake_irq_type = HIF_PM_INVALID_WAKE;
 	}
 
 	return ret;
@@ -3169,7 +3156,8 @@ int hif_pci_configure_grp_irq(struct hif_softc *scn,
 	for (j = 0; j < hif_ext_group->numirq; j++) {
 		irq = hif_ext_group->irq[j];
 		if (scn->irq_unlazy_disable)
-			irq_set_status_flags(irq, IRQ_DISABLE_UNLAZY);
+			qdf_dev_set_irq_status_flags(irq,
+						     QDF_IRQ_DISABLE_UNLAZY);
 		hif_debug("request_irq = %d for grp %d",
 			  irq, hif_ext_group->grp_id);
 		ret = pfrm_request_irq(
