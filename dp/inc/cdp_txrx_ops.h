@@ -1125,6 +1125,8 @@ struct cdp_peer_ops {
 	void (*peer_detach_force_delete)(void *peer);
 	void (*set_tdls_offchan_enabled)(void *peer, bool val);
 	void (*set_peer_as_tdls_peer)(void *peer, bool val);
+	void (*peer_flush_frags)(struct cdp_soc_t *soc_hdl,
+				 uint8_t vdev_id, uint8_t *peer_mac);
 };
 
 /**
