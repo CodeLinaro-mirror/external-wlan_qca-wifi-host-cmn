@@ -15920,6 +15920,8 @@ static void populate_tlv_service(uint32_t *wmi_service)
 			WMI_SERVICE_WAPI_CONCURRENCY_SUPPORTED;
 	wmi_service[wmi_service_reg_cc_ext_event_support] =
 			WMI_SERVICE_REG_CC_EXT_EVENT_SUPPORT;
+	wmi_service[wmi_service_ext_tpc_reg_support] =
+			WMI_SERVICE_EXT_TPC_REG_SUPPORT;
 }
 
 /**
