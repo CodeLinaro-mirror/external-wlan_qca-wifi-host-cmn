@@ -7443,6 +7443,10 @@ void wmi_copy_resource_config(wmi_resource_config *resource_cfg,
 
 	WMI_RSRC_CFG_FLAG_VIDEO_OVER_WIFI_ENABLE_SET(
 		resource_cfg->flag1, tgt_res_cfg->carrier_vow_optimization);
+
+	WMI_RSRC_CFG_HOST_SERVICE_FLAG_REG_CC_EXT_SUPPORT_SET(
+		resource_cfg->host_service_flags,
+		tgt_res_cfg->is_reg_cc_ext_event_supported);
 }
 
 /* copy_hw_mode_id_in_init_cmd() - Helper routine to copy hw_mode in init cmd
@@ -15911,6 +15915,8 @@ static void populate_tlv_service(uint32_t *wmi_service)
 
 	wmi_service[wmi_service_wapi_concurrency_supported] =
 			WMI_SERVICE_WAPI_CONCURRENCY_SUPPORTED;
+	wmi_service[wmi_service_reg_cc_ext_event_support] =
+			WMI_SERVICE_REG_CC_EXT_EVENT_SUPPORT;
 }
 
 /**
