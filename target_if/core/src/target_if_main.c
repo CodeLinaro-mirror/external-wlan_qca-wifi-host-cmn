@@ -659,3 +659,17 @@ bool target_is_tgt_type_qcn9000(uint32_t target_type)
 {
 	return target_type == TARGET_TYPE_QCN9000;
 }
+
+void target_if_set_reg_cc_ext_supp(struct target_psoc_info *tgt_hdl,
+				   struct wlan_objmgr_psoc *psoc)
+{
+	struct tgt_info *info;
+
+	if (!tgt_hdl)
+		return;
+
+	info = (&tgt_hdl->info);
+
+	info->wlan_res_cfg.is_reg_cc_ext_event_supported =
+		target_if_reg_is_reg_cc_ext_event_host_supported(psoc);
+}

@@ -2341,5 +2341,16 @@ static inline void target_psoc_get_version_info(
 	*bdf_minor =
 		psoc_info->info.service_ext2_param.bdf_reg_db_version_minor;
 }
+
+/**
+ * target_if_set_reg_cc_ext_supp() - Set reg_cc_ext_supp capability
+ * in WMI_INIT_CMD based on host capability of reg_cc_ext_event.
+ *
+ * @tgt_hdl: Pointer to struct target_psoc_info.
+ * @psoc: Pointer to struct wlan_objmgr_psoc.
+ *
+ */
+void target_if_set_reg_cc_ext_supp(struct target_psoc_info *tgt_hdl,
+				   struct wlan_objmgr_psoc *psoc);
 #endif
 

@@ -5131,6 +5131,7 @@ typedef enum {
 	wmi_service_sta_nan_ndi_four_port,
 	wmi_service_host_scan_stop_vdev_all,
 	wmi_service_no_interband_mcc_support,
+	wmi_service_reg_cc_ext_event_support,
 	wmi_services_max,
 } wmi_conv_service_ids;
 #define WMI_SERVICE_UNAVAILABLE 0xFFFF
@@ -5267,6 +5268,7 @@ struct wmi_host_fw_abi_ver {
  * @ast_tid_low_mask_enable: enable tid valid mask for low priority flow
  * @nan_separate_iface_support: Separate iface creation for NAN
  * @time_sync_ftm: enable ftm based time sync
+ * @is_reg_cc_ext_event_supported: Flag to indicate if reg_cc_ext is supported
  * @max_rnr_neighbours: Max supported RNR neighbors in multisoc APs
  */
 typedef struct {
@@ -5366,6 +5368,7 @@ typedef struct {
 		 ast_tid_low_mask_enable:8;
 	bool nan_separate_iface_support;
 	bool time_sync_ftm;
+	bool is_reg_cc_ext_event_supported;
 	uint32_t max_rnr_neighbours;
 } target_resource_config;
 

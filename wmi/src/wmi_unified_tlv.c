@@ -6897,6 +6897,9 @@ void wmi_copy_resource_config(wmi_resource_config *resource_cfg,
 		resource_cfg->host_service_flags,
 		tgt_res_cfg->nan_separate_iface_support);
 
+	WMI_RSRC_CFG_HOST_SERVICE_FLAG_REG_CC_EXT_SUPPORT_SET(
+		resource_cfg->host_service_flags,
+		tgt_res_cfg->is_reg_cc_ext_event_supported);
 }
 
 /* copy_hw_mode_id_in_init_cmd() - Helper routine to copy hw_mode in init cmd
@@ -14885,6 +14888,8 @@ static void populate_tlv_service(uint32_t *wmi_service)
 		WMI_SERVICE_HOST_SCAN_STOP_VDEV_ALL_SUPPORT;
 	wmi_service[wmi_service_no_interband_mcc_support] =
 			WMI_SERVICE_NO_INTERBAND_MCC_SUPPORT;
+	wmi_service[wmi_service_reg_cc_ext_event_support] =
+			WMI_SERVICE_REG_CC_EXT_EVENT_SUPPORT;
 }
 
 /**
