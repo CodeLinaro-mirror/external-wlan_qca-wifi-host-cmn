@@ -8794,40 +8794,6 @@ static QDF_STATUS extract_service_ready_tlv(wmi_unified_t wmi_handle,
 	return QDF_STATUS_SUCCESS;
 }
 
-/* convert_phybitmap_tlv() - Convert  WMI_REGULATORY_PHYBITMAP values sent by
- * target to host internal REGULATORY_PHYMODE values.
- *
- * @target_target_phybitmap: target phybitmap received in the message.
- *
- * Return: returns the host internal REGULATORY_PHYMODE.
- */
-static uint32_t convert_phybitmap_tlv(uint32_t target_phybitmap)
-{
-	uint32_t phybitmap = 0;
-
-	wmi_debug("Target phybitmap: 0x%x", target_phybitmap);
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11A)
-		phybitmap |= REGULATORY_PHYMODE_NO11A;
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11B)
-		phybitmap |= REGULATORY_PHYMODE_NO11B;
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11G)
-		phybitmap |= REGULATORY_PHYMODE_NO11G;
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11N)
-		phybitmap |= REGULATORY_CHAN_NO11N;
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11AC)
-		phybitmap |= REGULATORY_PHYMODE_NO11AC;
-
-	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11AX)
-		phybitmap |= REGULATORY_PHYMODE_NO11AX;
-
-	return phybitmap;
-}
-
 /* convert_wireless_modes_tlv() - Convert REGDMN_MODE values sent by target
  *	 to host internal WMI_HOST_REGDMN_MODE values.
  *	 REGULATORY TODO : REGDMN_MODE_11AC_VHT*_2G values are not used by the
@@ -11395,6 +11361,41 @@ static enum cc_setting_code wmi_reg_status_to_reg_status(
 }
 
 #ifdef CONFIG_BAND_6GHZ
+
+/* convert_phybitmap_tlv() - Convert  WMI_REGULATORY_PHYBITMAP values sent by
+ * target to host internal REGULATORY_PHYMODE values.
+ *
+ * @target_target_phybitmap: target phybitmap received in the message.
+ *
+ * Return: returns the host internal REGULATORY_PHYMODE.
+ */
+static uint32_t convert_phybitmap_tlv(uint32_t target_phybitmap)
+{
+	uint32_t phybitmap = 0;
+
+	wmi_debug("Target phybitmap: 0x%x", target_phybitmap);
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11A)
+		phybitmap |= REGULATORY_PHYMODE_NO11A;
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11B)
+		phybitmap |= REGULATORY_PHYMODE_NO11B;
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11G)
+		phybitmap |= REGULATORY_PHYMODE_NO11G;
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11N)
+		phybitmap |= REGULATORY_CHAN_NO11N;
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11AC)
+		phybitmap |= REGULATORY_PHYMODE_NO11AC;
+
+	if (target_phybitmap & WMI_REGULATORY_PHYMODE_NO11AX)
+		phybitmap |= REGULATORY_PHYMODE_NO11AX;
+
+	return phybitmap;
+}
+
 static QDF_STATUS extract_reg_chan_list_ext_update_event_tlv(
 	wmi_unified_t wmi_handle, uint8_t *evt_buf,
 	struct cur_regulatory_info *reg_info, uint32_t len)
