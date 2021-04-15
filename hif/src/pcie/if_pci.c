@@ -3609,6 +3609,8 @@ free_wake_irq:
 	return ret;
 }
 
+#ifdef DP_MSI_DYNAMIC_CFG
+
 static void hif_exec_grp_irq_disable(struct hif_exec_context *hif_ext_group)
 {
 	if (hif_ext_group->dp_msi_handler)
@@ -3620,7 +3622,32 @@ static void hif_exec_grp_irq_enable(struct hif_exec_context *hif_ext_group)
 	if (hif_ext_group->dp_msi_handler)
 		hif_ext_group->dp_msi_handler(hif_ext_group->context, true);
 }
+#else
+static void hif_exec_grp_irq_disable(struct hif_exec_context *hif_ext_group)
+{
+	int i;
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_ext_group->hif);
 
+	for (i = 0; i < hif_ext_group->numirq; i++)
+		pfrm_disable_irq_nosync(scn->qdf_dev->dev,
+					hif_ext_group->os_irq[i]);
+}
+
+/**
+ * hif_exec_grp_irq_enable() - enable the irq for group
+ * @hif_ext_group: hif exec context
+ *
+ * Return: none
+ */
+static void hif_exec_grp_irq_enable(struct hif_exec_context *hif_ext_group)
+{
+	int i;
+	struct hif_softc *scn = HIF_GET_SOFTC(hif_ext_group->hif);
+
+	for (i = 0; i < hif_ext_group->numirq; i++)
+		pfrm_enable_irq(scn->qdf_dev->dev, hif_ext_group->os_irq[i]);
+}
+#endif
 /**
  * hif_pci_get_irq_name() - get irqname
  * This function gives irqnumber to irqname
