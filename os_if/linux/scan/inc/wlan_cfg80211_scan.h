@@ -167,6 +167,7 @@ struct scan_params {
 	uint32_t dwell_time_passive;
 	uint32_t dwell_time_active_6g;
 	uint32_t dwell_time_passive_6g;
+	bool scan_probe_unicast_ra;
 };
 
 /**
