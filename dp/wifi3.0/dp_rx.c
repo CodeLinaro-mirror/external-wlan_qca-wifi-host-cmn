@@ -2275,6 +2275,7 @@ static inline bool dp_rx_mec_check_wrapper(struct dp_soc *soc,
 {
 	return false;
 }
+#endif
 
 #ifdef DISABLE_EAPOL_INTRABSS_FWD
 /*
@@ -2314,7 +2315,6 @@ bool dp_rx_intrabss_fwd_wrapper(struct dp_soc *soc, struct dp_peer *ta_peer,
 #define DP_RX_INTRABSS_FWD(soc, peer, rx_tlv_hdr, nbuf, msdu_metadata) \
 		dp_rx_intrabss_fwd(soc, peer, rx_tlv_hdr, nbuf, msdu_metadata)
 #endif
-
 /**
  * dp_rx_process() - Brain of the Rx processing functionality
  *		     Called from the bottom half (tasklet/NET_RX_SOFTIRQ)
