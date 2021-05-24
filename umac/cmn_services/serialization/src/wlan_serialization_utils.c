@@ -126,8 +126,8 @@ QDF_STATUS wlan_serialization_timer_destroy(
 		qdf_status =  QDF_STATUS_E_FAILURE;
 		goto error;
 	}
-
-	qdf_timer_stop(&ser_timer->timer);
+	/* Wait till timeout CB is completed */
+	qdf_timer_sync_cancel(&ser_timer->timer);
 	ser_timer->cmd = NULL;
 
 error:

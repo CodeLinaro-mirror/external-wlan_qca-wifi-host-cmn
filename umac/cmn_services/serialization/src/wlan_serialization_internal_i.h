@@ -120,19 +120,6 @@ wlan_serialization_dequeue_cmd(struct wlan_serialization_command *cmd,
 			       uint8_t active_cmd);
 
 /**
- * wlan_serialization_generic_timer_cb() - timer callback when timer fire
- * @arg: argument that timer passes to this callback
- *
- * All the timers in serialization module calls this callback when they fire,
- * and this API in turn calls command specific timeout callback and remove
- * timed-out command from active queue and move any pending command to active
- * queue of same cmd_type.
- *
- * Return: none
- */
-void wlan_serialization_generic_timer_cb(void *arg);
-
-/**
  * wlan_serialization_find_and_start_timer() - to find and start the timer
  * @psoc: pointer to psoc
  * @cmd: pointer to actual command
