@@ -2632,4 +2632,24 @@ cdp_wds_ext_set_peer_rx(ol_txrx_soc_handle soc, uint8_t vdev_id,
 			(soc, vdev_id, mac, rx, osif_peer);
 }
 #endif /* QCA_SUPPORT_WDS_EXTENDED */
+
+/**
+ * cdp_get_free_desc_poolsize() - get free desc pool size
+ * @soc: opaque soc handle
+ */
+static inline int
+cdp_get_free_desc_poolsize(ol_txrx_soc_handle soc)
+{
+	if (!soc || !soc->ops) {
+		dp_cdp_debug("Invalid Instance");
+		QDF_BUG(0);
+		return 0;
+	}
+
+	if (!soc->ops->cmn_drv_ops ||
+	    !soc->ops->cmn_drv_ops->get_free_desc_poolsize)
+		return 0;
+
+	return soc->ops->cmn_drv_ops->get_free_desc_poolsize(soc);
+}
 #endif /* _CDP_TXRX_CMN_H_ */

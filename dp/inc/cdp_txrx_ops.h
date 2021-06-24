@@ -566,6 +566,7 @@ struct cdp_cmn_ops {
 					  ol_txrx_rx_fp rx,
 					  ol_osif_peer_handle osif_peer);
 #endif /* QCA_SUPPORT_WDS_EXTENDED */
+	int (*get_free_desc_poolsize)(struct cdp_soc_t *soc);
 };
 
 struct cdp_ctrl_ops {
