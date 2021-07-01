@@ -2256,13 +2256,6 @@ done:
 		rx_tlv_hdr = qdf_nbuf_data(nbuf);
 		vdev_id = QDF_NBUF_CB_RX_VDEV_ID(nbuf);
 
-		if (qdf_unlikely(hal_rx_attn_msdu_len_err_get(rx_tlv_hdr))) {
-			DP_STATS_INC(soc, rx.err.msdu_len_err, 1);
-			qdf_nbuf_free(nbuf);
-			nbuf = next;
-			continue;
-		}
-
 		if (deliver_list_head && vdev && (vdev->vdev_id != vdev_id)) {
 			dp_rx_deliver_to_stack(soc, vdev, peer,
 					       deliver_list_head,
@@ -2318,17 +2311,27 @@ done:
 		 * Check if DMA completed -- msdu_done is the last bit
 		 * to be written
 		 */
-		if (qdf_unlikely(!qdf_nbuf_is_rx_chfrag_cont(nbuf) &&
-				 !hal_rx_attn_msdu_done_get(rx_tlv_hdr))) {
-			dp_err("MSDU DONE failure");
-			DP_STATS_INC(soc, rx.err.msdu_done_fail, 1);
-			hal_rx_dump_pkt_tlvs(hal_soc, rx_tlv_hdr,
-					     QDF_TRACE_LEVEL_INFO);
-			tid_stats->fail_cnt[MSDU_DONE_FAILURE]++;
-			qdf_nbuf_free(nbuf);
-			qdf_assert(0);
-			nbuf = next;
-			continue;
+		if (qdf_likely(!qdf_nbuf_is_rx_chfrag_cont(nbuf))) {
+			if (qdf_unlikely(!hal_rx_attn_msdu_done_get(
+								 rx_tlv_hdr))) {
+				dp_err_rl("MSDU DONE failure");
+				DP_STATS_INC(soc, rx.err.msdu_done_fail, 1);
+				hal_rx_dump_pkt_tlvs(hal_soc, rx_tlv_hdr,
+						     QDF_TRACE_LEVEL_INFO);
+				tid_stats->fail_cnt[MSDU_DONE_FAILURE]++;
+				qdf_assert(0);
+				qdf_nbuf_free(nbuf);
+				nbuf = next;
+				dp_peer_unref_del_find_by_id(peer);
+				continue;
+			} else if (qdf_unlikely(hal_rx_attn_msdu_len_err_get(
+								 rx_tlv_hdr))) {
+				DP_STATS_INC(soc, rx.err.msdu_len_err, 1);
+				qdf_nbuf_free(nbuf);
+				nbuf = next;
+				dp_peer_unref_del_find_by_id(peer);
+				continue;
+			}
 		}
 
 		DP_HIST_PACKET_COUNT_INC(vdev->pdev->pdev_id);
