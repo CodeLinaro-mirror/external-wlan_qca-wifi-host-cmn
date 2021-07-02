@@ -835,6 +835,15 @@ QDF_STATUS ucfg_crypto_set_key_req(struct wlan_objmgr_vdev *vdev,
 				   enum wlan_crypto_key_type key_type);
 
 /**
+ * wlan_crypto_set_default_key_idx() - set the default key index
+ * @keyid: Index to be set
+ * @igtk: denotes if the request is for igtk key type or not
+ *
+ * Return: Void
+ */
+void wlan_crypto_set_default_key_idx(struct wlan_objmgr_vdev *vdev,
+				     uint8_t keyid, bool igtk);
+/**
  * wlan_crypto_get_default_key_idx() - Get the default key index
  * @vdev: vdev object
  * @igtk: denotes if the request is for igtk key type or not

@@ -4431,6 +4431,23 @@ QDF_STATUS wlan_set_vdev_crypto_prarams_from_ie(struct wlan_objmgr_vdev *vdev,
 	return send_fail ? QDF_STATUS_E_FAILURE : QDF_STATUS_SUCCESS;
 }
 
+void wlan_crypto_set_default_key_idx(struct wlan_objmgr_vdev *vdev,
+				     uint8_t keyid, bool igtk)
+{
+	struct wlan_crypto_comp_priv *crypto_priv;
+
+	crypto_priv = wlan_get_vdev_crypto_obj(vdev);
+	if (!crypto_priv) {
+		crypto_err("crypto_priv NULL");
+		return;
+	}
+
+	if (igtk)
+		crypto_priv->def_igtk_tx_keyid = keyid;
+	else
+		crypto_priv->def_tx_keyid = keyid;
+}
+
 int8_t wlan_crypto_get_default_key_idx(struct wlan_objmgr_vdev *vdev, bool igtk)
 {
 	struct wlan_crypto_comp_priv *crypto_priv;
