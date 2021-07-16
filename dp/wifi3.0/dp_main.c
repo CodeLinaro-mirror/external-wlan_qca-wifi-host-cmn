@@ -2691,6 +2691,43 @@ static void dp_soc_interrupt_map_calculate(struct dp_soc *soc, int intr_ctx_num,
 }
 
 /*
+ * dp_soc_interrupt_detach() - Deregister any allocations done for interrupts
+ * @txrx_soc: DP SOC handle
+ *
+ * Return: none
+ */
+static void dp_soc_interrupt_detach(struct cdp_soc_t *txrx_soc)
+{
+	struct dp_soc *soc = (struct dp_soc *)txrx_soc;
+	int i;
+
+	if (soc->intr_mode == DP_INTR_POLL) {
+		qdf_timer_free(&soc->int_timer);
+	} else {
+		hif_deregister_exec_group(soc->hif_handle, "dp_intr");
+	}
+
+	for (i = 0; i < wlan_cfg_get_num_contexts(soc->wlan_cfg_ctx); i++) {
+		soc->intr_ctx[i].tx_ring_mask = 0;
+		soc->intr_ctx[i].rx_ring_mask = 0;
+		soc->intr_ctx[i].rx_mon_ring_mask = 0;
+		soc->intr_ctx[i].rx_err_ring_mask = 0;
+		soc->intr_ctx[i].rx_wbm_rel_ring_mask = 0;
+		soc->intr_ctx[i].reo_status_ring_mask = 0;
+		soc->intr_ctx[i].rxdma2host_ring_mask = 0;
+		soc->intr_ctx[i].host2rxdma_ring_mask = 0;
+		soc->intr_ctx[i].host2rxdma_mon_ring_mask = 0;
+
+		hif_event_history_deinit(soc->hif_handle, i);
+		qdf_lro_deinit(soc->intr_ctx[i].lro_ctx);
+	}
+
+	qdf_mem_set(&soc->mon_intr_id_lmac_map,
+		    sizeof(soc->mon_intr_id_lmac_map),
+		    DP_MON_INVALID_LMAC_ID);
+}
+
+/*
  * dp_soc_interrupt_attach() - Register handlers for DP interrupts
  * @txrx_soc: DP SOC handle
  *
@@ -2762,7 +2799,7 @@ static QDF_STATUS dp_soc_interrupt_attach(struct cdp_soc_t *txrx_soc)
 
 		if (ret) {
 			dp_init_err("%pK: failed, ret = %d", soc, ret);
-
+			dp_soc_interrupt_detach(txrx_soc);
 			return QDF_STATUS_E_FAILURE;
 		}
 
@@ -2773,43 +2810,6 @@ static QDF_STATUS dp_soc_interrupt_attach(struct cdp_soc_t *txrx_soc)
 	hif_configure_ext_group_interrupts(soc->hif_handle);
 
 	return QDF_STATUS_SUCCESS;
-}
-
-/*
- * dp_soc_interrupt_detach() - Deregister any allocations done for interrupts
- * @txrx_soc: DP SOC handle
- *
- * Return: none
- */
-static void dp_soc_interrupt_detach(struct cdp_soc_t *txrx_soc)
-{
-	struct dp_soc *soc = (struct dp_soc *)txrx_soc;
-	int i;
-
-	if (soc->intr_mode == DP_INTR_POLL) {
-		qdf_timer_free(&soc->int_timer);
-	} else {
-		hif_deregister_exec_group(soc->hif_handle, "dp_intr");
-	}
-
-	for (i = 0; i < wlan_cfg_get_num_contexts(soc->wlan_cfg_ctx); i++) {
-		soc->intr_ctx[i].tx_ring_mask = 0;
-		soc->intr_ctx[i].rx_ring_mask = 0;
-		soc->intr_ctx[i].rx_mon_ring_mask = 0;
-		soc->intr_ctx[i].rx_err_ring_mask = 0;
-		soc->intr_ctx[i].rx_wbm_rel_ring_mask = 0;
-		soc->intr_ctx[i].reo_status_ring_mask = 0;
-		soc->intr_ctx[i].rxdma2host_ring_mask = 0;
-		soc->intr_ctx[i].host2rxdma_ring_mask = 0;
-		soc->intr_ctx[i].host2rxdma_mon_ring_mask = 0;
-
-		hif_event_history_deinit(soc->hif_handle, i);
-		qdf_lro_deinit(soc->intr_ctx[i].lro_ctx);
-	}
-
-	qdf_mem_set(&soc->mon_intr_id_lmac_map,
-		    sizeof(soc->mon_intr_id_lmac_map),
-		    DP_MON_INVALID_LMAC_ID);
 }
 
 #define AVG_MAX_MPDUS_PER_TID 128
