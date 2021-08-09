@@ -860,6 +860,8 @@ struct dp_soc_stats {
 			uint32_t intrabss_eapol_drop;
 			/* MSDU len err count */
 			uint32_t msdu_len_err;
+			/* Stale link desc cookie count*/
+			uint32_t invalid_link_cookie;
 		} err;
 
 		/* packet count per core - per ring */

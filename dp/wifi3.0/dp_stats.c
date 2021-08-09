@@ -5855,7 +5855,8 @@ void dp_txrx_path_stats(struct dp_soc *soc)
 			       pdev->soc->stats.rx.err.reo_err_oor_drop);
 		DP_PRINT_STATS("Rx err msdu rejected: %d",
 			       soc->stats.rx.err.rejected);
-
+		DP_PRINT_STATS("Rx stale link desc cookie: %d",
+			       pdev->soc->stats.rx.err.invalid_link_cookie);
 		DP_PRINT_STATS("Reo Statistics");
 		DP_PRINT_STATS("near_full: %u ", soc->stats.rx.near_full);
 		DP_PRINT_STATS("rbm error: %u msdus",
@@ -6402,6 +6403,8 @@ dp_print_soc_rx_stats(struct dp_soc *soc)
 
 	DP_PRINT_STATS("RX pending drop: %d",
 		       soc->stats.rx.pending_drop);
+	DP_PRINT_STATS("Rx stale link desc cookie: %d",
+		       soc->stats.rx.err.invalid_link_cookie);
 
 	for (i = 0; i < HAL_RXDMA_ERR_MAX; i++) {
 		index += qdf_snprint(&rxdma_error[index],
