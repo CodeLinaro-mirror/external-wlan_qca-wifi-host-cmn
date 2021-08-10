@@ -862,6 +862,8 @@ struct dp_soc_stats {
 			uint32_t msdu_len_err;
 			/* Stale link desc cookie count*/
 			uint32_t invalid_link_cookie;
+			/* Nbuf sanity failure */
+			uint32_t nbuf_sanity_fail;
 		} err;
 
 		/* packet count per core - per ring */
