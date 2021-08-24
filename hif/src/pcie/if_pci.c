@@ -2861,6 +2861,7 @@ int hif_ce_msi_configure_irq_by_ceid(struct hif_softc *scn, int ce_id)
 	struct HIF_CE_state *ce_sc = HIF_GET_CE_STATE(scn);
 	struct hif_pci_softc *pci_sc = HIF_GET_PCI_SOFTC(scn);
 	int pci_slot;
+	unsigned long irq_flags;
 
 	if (ce_id >= CE_COUNT_MAX)
 		return -EINVAL;
@@ -2885,8 +2886,13 @@ int hif_ce_msi_configure_irq_by_ceid(struct hif_softc *scn, int ce_id)
 		goto skip;
 
 	pci_sc->ce_msi_irq_num[ce_id] = irq;
+#ifdef WLAN_ONE_MSI_VECTOR
+	irq_flags = IRQF_SHARED | IRQF_NO_SUSPEND;
+#else
+	irq_flags = IRQF_SHARED;
+#endif
 	ret = pfrm_request_irq(scn->qdf_dev->dev,
-			       irq, hif_ce_interrupt_handler, IRQF_SHARED,
+			       irq, hif_ce_interrupt_handler, irq_flags,
 			       ce_irqname[pci_slot][ce_id],
 			       &ce_sc->tasklets[ce_id]);
 	if (ret)
