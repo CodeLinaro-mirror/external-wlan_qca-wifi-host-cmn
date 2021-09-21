@@ -255,9 +255,9 @@ dp_get_cfr_dbg_stats(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 static inline void
 dp_clear_cfr_dbg_stats(struct cdp_soc_t *soc_hdl, uint8_t pdev_id);
 static inline void
+#endif
 dp_enable_mon_reap_timer(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 			 bool enable);
-#endif
 static inline bool
 dp_is_enable_reap_timer_non_pkt(struct dp_pdev *pdev);
 static uint8_t dp_soc_ring_if_nss_offloaded(struct dp_soc *soc,
@@ -11565,6 +11565,7 @@ static struct cdp_mon_ops dp_ops_mon = {
 	.txrx_set_advance_monitor_filter = dp_pdev_set_advance_monitor_filter,
 	.txrx_deliver_tx_mgmt = dp_deliver_tx_mgmt,
 	.config_full_mon_mode = dp_config_full_mon_mode,
+	.txrx_enable_mon_reap_timer = dp_enable_mon_reap_timer,
 };
 
 static struct cdp_host_stats_ops dp_ops_host_stats = {
@@ -11603,7 +11604,6 @@ static struct cdp_cfr_ops dp_ops_cfr = {
 	.txrx_set_cfr_rcc = dp_set_cfr_rcc,
 	.txrx_get_cfr_dbg_stats = dp_get_cfr_dbg_stats,
 	.txrx_clear_cfr_dbg_stats = dp_clear_cfr_dbg_stats,
-	.txrx_enable_mon_reap_timer = dp_enable_mon_reap_timer,
 };
 #endif
 
@@ -12885,6 +12885,7 @@ static void dp_clear_cfr_dbg_stats(struct cdp_soc_t *soc_hdl,
 
 	qdf_mem_zero(&pdev->stats.rcc, sizeof(pdev->stats.rcc));
 }
+#endif
 
 /*
  * dp_enable_mon_reap_timer() - enable/disable reap timer
@@ -12924,7 +12925,6 @@ dp_enable_mon_reap_timer(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 	else
 		qdf_timer_sync_cancel(&soc->mon_reap_timer);
 }
-#endif
 
 /*
  * dp_is_enable_reap_timer_non_pkt() - check if mon reap timer is
