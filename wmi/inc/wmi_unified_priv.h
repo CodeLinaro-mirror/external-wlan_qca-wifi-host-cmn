@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2021 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -2522,6 +2523,12 @@ QDF_STATUS (*config_peer_latency_info_cmd)(
 QDF_STATUS (*send_set_tpc_power_cmd)(wmi_unified_t wmi_handle,
 				     uint8_t vdev_id,
 				     struct reg_tpc_power_info *param);
+
+#ifdef WLAN_FEATURE_SON
+QDF_STATUS
+(*extract_inst_rssi_stats_resp)(wmi_unified_t wmi_handle, void *evt_buf,
+			struct wmi_host_inst_rssi_stats_resp *inst_rssi_resp);
+#endif
 };
 
 /* Forward declartion for psoc*/
