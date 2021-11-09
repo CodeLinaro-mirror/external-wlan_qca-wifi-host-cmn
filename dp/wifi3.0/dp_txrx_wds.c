@@ -1081,7 +1081,9 @@ void dp_hmwds_ast_add_notify(struct dp_peer *peer,
 			     bool is_peer_map)
 {
 	struct dp_vdev *dp_vdev = peer->vdev;
+#ifdef WDI_EVENT_ENABLE
 	struct dp_pdev *dp_pdev = dp_vdev->pdev;
+#endif
 	struct cdp_peer_hmwds_ast_add_status add_status;
 
 	/* Ignore ast types other than HM */
