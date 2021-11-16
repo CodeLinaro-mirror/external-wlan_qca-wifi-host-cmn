@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2021 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -39,7 +40,7 @@
 #include <net/cnss_prealloc.h>
 #endif
 
-#ifdef QCA_USE_CUSTOMIZED_DMA_MEM
+#if defined(QCA_USE_CUSTOMIZED_DMA_MEM) || defined(WCNSS_DMA_PRE_ALLOC)
 #include <net/cnss2.h>
 #endif
 
@@ -2341,7 +2342,7 @@ void *qdf_mem_dma_alloc(qdf_device_t osdev, void *dev, qdf_size_t size,
 	return NULL;
 }
 
-#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM)
+#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM) || defined(WCNSS_DMA_PRE_ALLOC)
 static inline void *qdf_mem_dma_alloc(qdf_device_t osdev, void *dev,
 				      qdf_size_t size, qdf_dma_addr_t *paddr)
 {
@@ -2362,7 +2363,7 @@ qdf_mem_dma_free(void *dev, qdf_size_t size, void *vaddr, qdf_dma_addr_t paddr)
 {
 	qdf_mem_free(vaddr);
 }
-#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM)
+#elif defined(QCA_USE_CUSTOMIZED_DMA_MEM) || defined(WCNSS_DMA_PRE_ALLOC)
 static inline void
 qdf_mem_dma_free(void *dev, qdf_size_t size, void *vaddr, qdf_dma_addr_t paddr)
 {
