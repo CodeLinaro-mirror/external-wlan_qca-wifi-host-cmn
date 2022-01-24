@@ -3193,6 +3193,7 @@ struct category_name_info g_qdf_category_name[MAX_SUPPORTED_CATEGORY] = {
 	[QDF_MODULE_ID_QWRAP] = {"QWRAP"},
 	[QDF_MODULE_ID_DBDC_REP] = {"DBDC_REP"},
 	[QDF_MODULE_ID_EXT_AP] = {"EXT_AP"},
+	[QDF_MODULE_ID_SON] = {"SON"},
 	[QDF_MODULE_ID_ANY] = {"ANY"},
 };
 qdf_export_symbol(g_qdf_category_name);
