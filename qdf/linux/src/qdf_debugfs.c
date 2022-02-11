@@ -331,83 +331,83 @@ qdf_dentry_t qdf_debugfs_create_file(const char *name, uint16_t mode,
 }
 qdf_export_symbol(qdf_debugfs_create_file);
 
-qdf_dentry_t qdf_debugfs_create_u8(const char *name, uint16_t mode,
-				   qdf_dentry_t parent, u8 *value)
+void qdf_debugfs_create_u8(const char *name, uint16_t mode,
+			   qdf_dentry_t parent, u8 *value)
 {
 	umode_t filemode;
 
 	if (!name)
-		return NULL;
+		return;
 
 	if (!parent)
 		parent = qdf_debugfs_get_root();
 
 	filemode = qdf_debugfs_get_filemode(mode);
-	return debugfs_create_u8(name, filemode, parent, value);
+	debugfs_create_u8(name, filemode, parent, value);
 }
 
-qdf_dentry_t qdf_debugfs_create_u16(const char *name, uint16_t mode,
-				    qdf_dentry_t parent, u16 *value)
+void qdf_debugfs_create_u16(const char *name, uint16_t mode,
+			    qdf_dentry_t parent, u16 *value)
 {
 	umode_t filemode;
 
 	if (!name)
-		return NULL;
+		return;
 
 	if (!parent)
 		parent = qdf_debugfs_get_root();
 
 	filemode = qdf_debugfs_get_filemode(mode);
-	return debugfs_create_u16(name, filemode, parent, value);
+	debugfs_create_u16(name, filemode, parent, value);
 }
 qdf_export_symbol(qdf_debugfs_create_u16);
 
-qdf_dentry_t qdf_debugfs_create_u32(const char *name,
-				    uint16_t mode,
-				    qdf_dentry_t parent, u32 *value)
+void qdf_debugfs_create_u32(const char *name,
+			    uint16_t mode,
+			    qdf_dentry_t parent, u32 *value)
 {
 	umode_t filemode;
 
 	if (!name)
-		return NULL;
+		return;
 
 	if (!parent)
 		parent = qdf_debugfs_get_root();
 
 	filemode = qdf_debugfs_get_filemode(mode);
-	return debugfs_create_u32(name, filemode, parent, value);
+	debugfs_create_u32(name, filemode, parent, value);
 }
 qdf_export_symbol(qdf_debugfs_create_u32);
 
-qdf_dentry_t qdf_debugfs_create_u64(const char *name, uint16_t mode,
-				    qdf_dentry_t parent, u64 *value)
+void qdf_debugfs_create_u64(const char *name, uint16_t mode,
+			    qdf_dentry_t parent, u64 *value)
 {
 	umode_t filemode;
 
 	if (!name)
-		return NULL;
+		return;
 
 	if (!parent)
 		parent = qdf_debugfs_get_root();
 
 	filemode = qdf_debugfs_get_filemode(mode);
-	return debugfs_create_u64(name, filemode, parent, value);
+	debugfs_create_u64(name, filemode, parent, value);
 }
 qdf_export_symbol(qdf_debugfs_create_u64);
 
-qdf_dentry_t qdf_debugfs_create_atomic(const char *name, uint16_t mode,
-				       qdf_dentry_t parent, qdf_atomic_t *value)
+void qdf_debugfs_create_atomic(const char *name, uint16_t mode,
+			       qdf_dentry_t parent, qdf_atomic_t *value)
 {
 	umode_t filemode;
 
 	if (!name)
-		return NULL;
+		return;
 
 	if (!parent)
 		parent = qdf_debugfs_get_root();
 
 	filemode = qdf_debugfs_get_filemode(mode);
-	return debugfs_create_atomic_t(name, filemode, parent, value);
+	debugfs_create_atomic_t(name, filemode, parent, value);
 }
 qdf_export_symbol(qdf_debugfs_create_atomic);
 

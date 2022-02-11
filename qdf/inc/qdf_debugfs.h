@@ -147,8 +147,8 @@ void qdf_debugfs_write(qdf_debugfs_file_t file, const uint8_t *buf,
  * Return: dentry for the file; NULL in case of failure.
  *
  */
-qdf_dentry_t qdf_debugfs_create_u8(const char *name, uint16_t mode,
-				   qdf_dentry_t parent, u8 *value);
+void qdf_debugfs_create_u8(const char *name, uint16_t mode,
+			   qdf_dentry_t parent, u8 *value);
 
 /**
  * qdf_debugfs_create_u16() - create a debugfs file for a u16 variable
@@ -160,8 +160,8 @@ qdf_dentry_t qdf_debugfs_create_u8(const char *name, uint16_t mode,
  * Return: dentry for the file; NULL in case of failure.
  *
  */
-qdf_dentry_t qdf_debugfs_create_u16(const char *name, uint16_t mode,
-				    qdf_dentry_t parent, u16 *value);
+void qdf_debugfs_create_u16(const char *name, uint16_t mode,
+			    qdf_dentry_t parent, u16 *value);
 
 /**
  * qdf_debugfs_create_u32() - create a debugfs file for a u32 variable
@@ -173,8 +173,8 @@ qdf_dentry_t qdf_debugfs_create_u16(const char *name, uint16_t mode,
  * Return: dentry for the file; NULL in case of failure.
  *
  */
-qdf_dentry_t qdf_debugfs_create_u32(const char *name, uint16_t mode,
-				    qdf_dentry_t parent, u32 *value);
+void qdf_debugfs_create_u32(const char *name, uint16_t mode,
+			    qdf_dentry_t parent, u32 *value);
 
 /**
  * qdf_debugfs_create_u64() - create a debugfs file for a u64 variable
@@ -186,8 +186,8 @@ qdf_dentry_t qdf_debugfs_create_u32(const char *name, uint16_t mode,
  * Return: dentry for the file; NULL in case of failure.
  *
  */
-qdf_dentry_t qdf_debugfs_create_u64(const char *name, uint16_t mode,
-				    qdf_dentry_t parent, u64 *value);
+void qdf_debugfs_create_u64(const char *name, uint16_t mode,
+			    qdf_dentry_t parent, u64 *value);
 
 /**
  * qdf_debugfs_create_atomic() - create a debugfs file for an atomic variable
@@ -199,9 +199,9 @@ qdf_dentry_t qdf_debugfs_create_u64(const char *name, uint16_t mode,
  * Return: dentry for the file; NULL in case of failure.
  *
  */
-qdf_dentry_t qdf_debugfs_create_atomic(const char *name, uint16_t mode,
-				       qdf_dentry_t parent,
-				       qdf_atomic_t *value);
+void qdf_debugfs_create_atomic(const char *name, uint16_t mode,
+			       qdf_dentry_t parent,
+			       qdf_atomic_t *value);
 
 /**
  * qdf_debugfs_create_string() - create a debugfs file for a string
@@ -320,43 +320,38 @@ static inline void qdf_debugfs_write(qdf_debugfs_file_t file,
 {
 }
 
-static inline qdf_dentry_t qdf_debugfs_create_u8(const char *name,
-						 uint16_t mode,
-						 qdf_dentry_t parent, u8 *value)
+static inline void qdf_debugfs_create_u8(const char *name,
+					 uint16_t mode,
+					 qdf_dentry_t parent, u8 *value)
 {
-	return NULL;
 }
 
-static inline qdf_dentry_t qdf_debugfs_create_u16(const char *name,
-						  uint16_t mode,
-						  qdf_dentry_t parent,
-						  u16 *value)
+static inline void qdf_debugfs_create_u16(const char *name,
+					  uint16_t mode,
+					  qdf_dentry_t parent,
+					  u16 *value)
 {
-	return NULL;
 }
 
-static inline qdf_dentry_t qdf_debugfs_create_u32(const char *name,
-						  uint16_t mode,
-						  qdf_dentry_t parent,
-						  u32 *value)
+static inline void qdf_debugfs_create_u32(const char *name,
+					  uint16_t mode,
+					  qdf_dentry_t parent,
+					  u32 *value)
 {
-	return NULL;
 }
 
-static inline qdf_dentry_t qdf_debugfs_create_u64(const char *name,
-						  uint16_t mode,
-						  qdf_dentry_t parent,
-						  u64 *value)
+static inline void qdf_debugfs_create_u64(const char *name,
+					  uint16_t mode,
+					  qdf_dentry_t parent,
+					  u64 *value)
 {
-	return NULL;
 }
 
-static inline qdf_dentry_t qdf_debugfs_create_atomic(const char *name,
-						     uint16_t mode,
-						     qdf_dentry_t parent,
-						     qdf_atomic_t *value)
+static inline void qdf_debugfs_create_atomic(const char *name,
+					     uint16_t mode,
+					     qdf_dentry_t parent,
+					     qdf_atomic_t *value)
 {
-	return NULL;
 }
 
 static inline qdf_dentry_t debugfs_create_string(const char *name,
