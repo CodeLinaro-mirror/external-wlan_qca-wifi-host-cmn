@@ -401,6 +401,10 @@ static inline void wlan_crypto_put_be64(u8 *a, u64 val)
 #define crypto_info(params...) QDF_TRACE_INFO(QDF_MODULE_ID_CRYPTO, params)
 #define crypto_debug(params...) QDF_TRACE_DEBUG(QDF_MODULE_ID_CRYPTO, params)
 
+#define crypto_nofl_err(params...) QDF_TRACE_ERROR_NO_FL(QDF_MODULE_ID_CRYPTO, params)
+#define crypto_nofl_info(params...) QDF_TRACE_INFO_NO_FL(QDF_MODULE_ID_CRYPTO, params)
+#define crypto_nofl_debug(params...) QDF_TRACE_DEBUG_NO_FL(QDF_MODULE_ID_CRYPTO, params)
+
 /**
  * struct wlan_crypto_mmie - MMIE IE
  * @element_id:      element id

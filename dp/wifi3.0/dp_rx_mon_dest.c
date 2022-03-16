@@ -122,8 +122,8 @@ dp_rx_mon_link_desc_return(struct dp_pdev *dp_pdev,
 		 * Ring Type / Ring Id combo
 		 */
 		QDF_TRACE(QDF_MODULE_ID_TXRX, QDF_TRACE_LEVEL_ERROR,
-			"%s %d : \
-			HAL RING Access For WBM Release SRNG Failed -- %pK",
+			"%s %d : "
+			"HAL RING Access For WBM Release SRNG Failed -- %pK",
 			__func__, __LINE__, hal_ring_hdl);
 		goto done;
 	}

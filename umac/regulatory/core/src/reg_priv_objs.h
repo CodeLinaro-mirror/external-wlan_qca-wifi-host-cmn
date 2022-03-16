@@ -48,12 +48,16 @@
 	QDF_TRACE_FATAL_NO_FL(QDF_MODULE_ID_REGULATORY, params)
 #define reg_nofl_err(params...) \
 	QDF_TRACE_ERROR_NO_FL(QDF_MODULE_ID_REGULATORY, params)
+#define reg_nofl_err_rl(params...) \
+	QDF_TRACE_ERROR_RL_NO_FL(QDF_MODULE_ID_REGULATORY, params)
 #define reg_nofl_warn(params...) \
 	QDF_TRACE_WARN_NO_FL(QDF_MODULE_ID_REGULATORY, params)
 #define reg_nofl_info(params...) \
 	QDF_TRACE_INFO_NO_FL(QDF_MODULE_ID_REGULATORY, params)
 #define reg_nofl_debug(params...) \
 	QDF_TRACE_DEBUG_NO_FL(QDF_MODULE_ID_REGULATORY, params)
+#define reg_nofl_debug_rl(params...) \
+	QDF_TRACE_DEBUG_RL_NO_FL(QDF_MODULE_ID_REGULATORY, params)
 
 /**
  * typedef reg_chan_change_callback() - Regulatory channel change callback

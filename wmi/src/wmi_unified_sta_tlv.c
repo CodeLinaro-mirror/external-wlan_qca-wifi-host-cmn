@@ -186,9 +186,9 @@ static QDF_STATUS send_vdev_set_gtx_cfg_cmd_tlv(wmi_unified_t wmi_handle, uint32
 	cmd->gtxTPCMin = gtx_info->gtx_tpcmin;
 	cmd->gtxBWMask = gtx_info->gtx_bwmask;
 
-	wmi_debug("Setting vdev%d GTX values:htmcs 0x%x, vhtmcs 0x%x, usermask 0x%x, \
-		 gtxPERThreshold %d, gtxPERMargin %d, gtxTPCstep %d, gtxTPCMin %d, \
-		 gtxBWMask 0x%x.", if_id, cmd->gtxRTMask[0], cmd->gtxRTMask[1],
+	wmi_debug("Setting vdev%d GTX values:htmcs 0x%x, vhtmcs 0x%x, usermask 0x%x,"
+		 "gtxPERThreshold %d, gtxPERMargin %d, gtxTPCstep %d, gtxTPCMin %d,"
+		 "gtxBWMask 0x%x.", if_id, cmd->gtxRTMask[0], cmd->gtxRTMask[1],
 		 cmd->userGtxMask, cmd->gtxPERThreshold, cmd->gtxPERMargin,
 		 cmd->gtxTPCstep, cmd->gtxTPCMin, cmd->gtxBWMask);
 
