@@ -290,6 +290,9 @@ struct hif_config_info {
 	u_int32_t runtime_pm_delay;
 #endif
 	uint64_t rx_softirq_max_yield_duration_ns;
+#ifdef WLAN_ONE_MSI_VECTOR
+	uint32_t irq_disabled_max_duration_ms;
+#endif
 };
 
 /**
@@ -329,6 +332,9 @@ enum hif_event_type {
 	HIF_EVENT_BH_SCHED,
 	HIF_EVENT_SRNG_ACCESS_START,
 	HIF_EVENT_SRNG_ACCESS_END,
+#ifdef WLAN_ONE_MSI_VECTOR
+	HIF_EVENT_IRQ_DISABLE_EXPIRED,
+#endif
 	/* Do check hif_hist_skip_event_record when adding new events */
 };
 

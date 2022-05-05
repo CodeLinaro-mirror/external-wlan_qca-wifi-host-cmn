@@ -112,6 +112,9 @@ struct hif_exec_context {
 #endif
 	atomic_t tasklet_deleted;
 	qdf_semaphore_t tasklet_sem;
+#ifdef WLAN_ONE_MSI_VECTOR
+	unsigned long long irq_disabled_start_time;
+#endif
 };
 
 /**
