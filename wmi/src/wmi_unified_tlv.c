@@ -12828,6 +12828,13 @@ static QDF_STATUS init_cmd_send_tlv(wmi_unified_t wmi_handle,
 		 resource_cfg->num_tdls_conn_table_entries,
 		 resource_cfg->num_tdls_vdevs);
 
+	printk("resource_cfg->flag1: 0x%x, resource_cfg->flags2: 0x%x\n",
+	       resource_cfg->flag1, resource_cfg->flags2);
+	WMI_RSRC_CFG_FLAG_PCIE_GEN_SWITCH_CAPABLITY_SET(
+				resource_cfg->flag1, 0);
+	printk("Disable PCIE_GET_Switch, resource_cfg->flag1: 0x%x, resource_cfg->flags2: 0x%x\n",
+	       resource_cfg->flag1, resource_cfg->flags2);
+
 	/* Fill hw mode id config */
 	buf_ptr = copy_hw_mode_in_init_cmd(wmi_handle, buf_ptr, &len, param);
 
