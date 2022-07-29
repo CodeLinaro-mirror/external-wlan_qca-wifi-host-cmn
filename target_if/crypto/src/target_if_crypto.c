@@ -183,16 +183,20 @@ QDF_STATUS target_if_crypto_set_key(struct wlan_objmgr_vdev *vdev,
 	qdf_mem_copy(&params.key_rsc_ctr,
 		     &req->keyrsc[0], sizeof(uint64_t));
 
-	peer_exist = cdp_find_peer_exist(soc, pdev->pdev_objmgr.wlan_pdev_id,
-					 req->macaddr);
 	target_if_debug("key_type %d, mac: %02x:%02x:%02x:%02x:%02x:%02x",
 			key_type, req->macaddr[0], req->macaddr[1],
 			req->macaddr[2], req->macaddr[3], req->macaddr[4],
 			req->macaddr[5]);
 
-	if ((key_type == WLAN_CRYPTO_KEY_TYPE_UNICAST) && !peer_exist) {
-		target_if_err("Invalid peer");
-		return QDF_STATUS_E_FAILURE;
+	if (wlan_vdev_mlme_get_opmode(vdev) != QDF_NAN_DISC_MODE) {
+		peer_exist = cdp_find_peer_exist(soc,
+						 pdev->pdev_objmgr.wlan_pdev_id,
+						 req->macaddr);
+
+		if ((key_type == WLAN_CRYPTO_KEY_TYPE_UNICAST) && !peer_exist) {
+			target_if_err("Invalid peer");
+			return QDF_STATUS_E_FAILURE;
+		}
 	}
 
 	params.key_cipher = wlan_crypto_cipher_to_wmi_cipher(req->cipher_type);
