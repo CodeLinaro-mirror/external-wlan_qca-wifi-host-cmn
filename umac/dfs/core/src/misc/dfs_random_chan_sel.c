@@ -2055,8 +2055,7 @@ static void dfs_apply_rules_for_freq(struct wlan_dfs *dfs,
 		}
 
 		if (flag_no_dfs_chan &&
-		    wlan_reg_is_dfs_for_freq(dfs->dfs_pdev_obj,
-					     chan->dfs_ch_freq)) {
+		    (chan->dfs_ch_flagext & WLAN_CHAN_DFS)) {
 			dfs_debug(dfs, WLAN_DEBUG_DFS_RANDOM_CHAN,
 				  "skip dfs channel=%d", chan->dfs_ch_ieee);
 			continue;
