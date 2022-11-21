@@ -3295,7 +3295,7 @@ static inline void qdf_nbuf_tso_unmap_frag(
 {
 	qdf_record_nbuf_nbytes(nbytes, dir, false);
 	qdf_mem_unmap_nbytes_single(osdev, tso_frag_paddr,
-				    nbytes, dir);
+				    dir, nbytes);
 }
 
 /**
