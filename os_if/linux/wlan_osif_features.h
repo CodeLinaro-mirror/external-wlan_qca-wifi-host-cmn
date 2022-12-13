@@ -61,6 +61,7 @@
 #define CFG80211_11BE_BASIC 1
 #endif
 
+#define CFG80211_11BE_BASIC 1
 /*
  * CFG80211_SA_QUERY_OFFLOAD_SUPPORT
  * Used to indicate the Linux Kernel contains support to offload SA Query
@@ -116,6 +117,7 @@
 #define CFG80211_SINGLE_NETDEV_MULTI_LINK_SUPPORT 1
 #endif
 
+#define CFG80211_SINGLE_NETDEV_MULTI_LINK_SUPPORT 1
 /**
  * CFG80211_SAE_AUTH_TA_ADDR_SUPPORT
  * Used to indicate the Linux Kernel contains support for ML SAE auth with link
@@ -144,6 +146,7 @@
 #define CFG80211_MULTI_AKM_CONNECT_SUPPORT 1
 #endif
 
+#define CFG80211_MULTI_AKM_CONNECT_SUPPORT 1
 /*
  * WLAN_MLD_AP_STA_CONNECT_SUPPORT
  * Used to indicate Linux Kernel supports ML connection on SAP.
@@ -248,6 +251,7 @@
 #define WLAN_EXTERNAL_AUTH_MLO_SUPPORT
 #endif
 
+#define WLAN_EXTERNAL_AUTH_MLO_SUPPORT
 /*
  * CFG80211_TID_LINK_MAP_SUPPORT
  * Used to indicate Linux kernel contains support to get the TID to link map
