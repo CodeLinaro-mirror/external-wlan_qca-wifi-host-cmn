@@ -2643,7 +2643,6 @@ dp_rx_wbm_err_process(struct dp_intr *int_ctx, struct dp_soc *soc,
 				dp_rx_err_alert("invalid reo push reason %u",
 						wbm_err.info_bit.reo_psh_rsn);
 				dp_rx_nbuf_free(nbuf);
-				qdf_assert_always(0);
 			}
 		} else if (wbm_err.info_bit.wbm_err_src ==
 					HAL_RX_WBM_ERR_SRC_RXDMA) {
