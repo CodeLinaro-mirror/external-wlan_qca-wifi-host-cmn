@@ -1117,6 +1117,7 @@ enum scan_request_type {
  * @num_hint_bssid: number of BSSID hints
  * @hint_s_ssid: short SSID hints
  * @hint_bssid: BSSID hints
+ * @mld_id: MLD ID of the requested BSS within ML probe request
  */
 struct scan_req_params {
 	uint32_t scan_id;
@@ -1217,6 +1218,7 @@ struct scan_req_params {
 	uint32_t num_hint_bssid;
 	struct hint_short_ssid hint_s_ssid[WLAN_SCAN_MAX_HINT_S_SSID];
 	struct hint_bssid hint_bssid[WLAN_SCAN_MAX_HINT_BSSID];
+	uint8_t mld_id;
 };
 
 /**
