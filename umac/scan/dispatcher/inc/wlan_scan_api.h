@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -561,4 +561,11 @@ QDF_STATUS
 wlan_scan_get_mld_addr_by_link_addr(struct wlan_objmgr_pdev *pdev,
 				    struct qdf_mac_addr *link_addr,
 				    struct qdf_mac_addr *mld_mac_addr);
+
+static inline bool
+wlan_scan_entries_contain_cmn_akm(struct scan_cache_entry *entry1,
+				  struct scan_cache_entry *entry2)
+{
+	return scm_scan_entries_contain_cmn_akm(entry1, entry2);
+}
 #endif
