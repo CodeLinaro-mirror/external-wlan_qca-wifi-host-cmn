@@ -2061,10 +2061,12 @@ static void util_scan_set_security(struct scan_cache_entry *scan_params)
 	if (util_scan_entry_wpa(scan_params))
 		scan_params->security_type |= SCAN_SECURITY_TYPE_WPA;
 
-	if (util_scan_entry_rsn(scan_params))
+	if (scan_params->ie_list.rsn)
 		scan_params->security_type |= SCAN_SECURITY_TYPE_RSN;
 	if (util_scan_entry_wapi(scan_params))
 		scan_params->security_type |= SCAN_SECURITY_TYPE_WAPI;
+	if (scan_params->ie_list.wifi6_rsno || scan_params->ie_list.wifi7_rsno)
+		scan_params->security_type |= SCAN_SECURITY_TYPE_RSNO;
 
 	if (!scan_params->security_type &&
 	    scan_params->cap_info.wlan_caps.privacy)
