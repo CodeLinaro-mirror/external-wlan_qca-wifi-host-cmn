@@ -908,3 +908,11 @@ wlan_scan_get_scan_entry_by_mac_freq(struct wlan_objmgr_pdev *pdev,
 	return scm_scan_get_scan_entry_by_mac_freq(pdev, bssid, freq,
 						   cache_entry);
 }
+
+struct scan_cache_entry *
+wlan_scan_entry_from_bssid_and_crypto(struct wlan_objmgr_pdev *pdev,
+				      struct qdf_mac_addr *bssid,
+				      uint8_t vdev_id)
+{
+	return scm_scan_get_entry_from_bssid_and_crypto(pdev, bssid, vdev_id);
+}
