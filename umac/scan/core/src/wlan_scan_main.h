@@ -550,6 +550,7 @@ struct scan_cb {
  *                        on the ini scan_mode_6ghz_duty_cycle.
  * @allow_bss_with_incomplete_ie: Continue scan entry even if any corrupted
  *                                IEs are present.
+ * @mrsno_support: mrsno supported by supplicant
  */
 struct wlan_scan_obj {
 	uint32_t scan_disabled;
@@ -586,6 +587,7 @@ struct wlan_scan_obj {
 #endif
 	uint16_t duty_cycle_cnt_6ghz;
 	bool allow_bss_with_incomplete_ie;
+	uint8_t mrsno_support;
 };
 
 #ifdef ENABLE_SCAN_PROFILE

@@ -1190,4 +1190,13 @@ bool ucfg_scan_is_snr_monitor_enabled(struct wlan_objmgr_psoc *psoc)
 {
 	return wlan_scan_is_snr_monitor_enabled(psoc);
 }
+
+/*
+ * ucfg_scan_set_mrsno_support() - Set mrsno support in scan psoc object
+ *@psoc: pointer to psoc object
+ *@value: mrsno support
+ *
+ * Retun: None
+ */
+void ucfg_scan_set_mrsno_support(struct wlan_objmgr_psoc *psoc, uint8_t value);
 #endif

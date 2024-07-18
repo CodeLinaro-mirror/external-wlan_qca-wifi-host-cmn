@@ -140,16 +140,17 @@ bool util_is_rsnxe_h2e_capable(const uint8_t *rsnxe)
 bool util_scan_entry_sae_h2e_capable(struct scan_cache_entry *scan_entry)
 {
 	const uint8_t *rsnxe;
+	uint8_t rsn_sel = scan_entry->neg_sec_info.rsn_gen_selected;
 
 	/* If RSN caps are not there, then return false */
-	if (!util_scan_entry_rsn(scan_entry))
+	if (!util_scan_entry_rsn_by_gen(scan_entry, rsn_sel))
 		return false;
 
 	/* If not SAE AKM no need to check H2E capability */
 	if (!WLAN_CRYPTO_IS_AKM_SAE(scan_entry->neg_sec_info.key_mgmt))
 		return false;
 
-	rsnxe = util_scan_entry_rsnxe(scan_entry);
+	rsnxe = util_scan_entry_rsnxe_by_gen(scan_entry, rsn_sel);
 	return util_is_rsnxe_h2e_capable(rsnxe);
 }
 
@@ -3966,3 +3967,72 @@ util_scan_entry_single_pmk(struct wlan_objmgr_psoc *psoc,
 	return false;
 }
 #endif
+
+uint8_t util_scan_is_mrsn_supported(void)
+{
+	struct wlan_objmgr_psoc *psoc = NULL;
+	struct wlan_scan_obj *scan_obj;
+	uint8_t mrsno_sup;
+
+	psoc = wlan_objmgr_get_psoc_by_id(0, WLAN_SCAN_ID);
+	if (!psoc)
+		return false;
+
+	scan_obj = wlan_psoc_get_scan_obj(psoc);
+	if (!scan_obj)
+		return false;
+
+	mrsno_sup = scan_obj->mrsno_support;
+	wlan_objmgr_psoc_release_ref(psoc, WLAN_SCAN_ID);
+
+	return mrsno_sup;
+}
+
+uint8_t*
+util_scan_entry_rsn_by_gen(struct scan_cache_entry *scan_entry,
+			   uint8_t rsno_gen)
+{
+	if (!scan_entry)
+		return NULL;
+
+	if (rsno_gen == RSN_LEGACY || !util_scan_is_mrsn_supported())
+		return scan_entry->ie_list.rsn;
+	if (rsno_gen == RSNO_GEN_WIFI7)
+		return scan_entry->ie_list.wifi7_rsno;
+	if (rsno_gen == RSNO_GEN_WIFI6)
+		return scan_entry->ie_list.wifi6_rsno;
+
+	return NULL;
+}
+
+uint8_t*
+util_scan_entry_rsnxe_by_gen(struct scan_cache_entry *scan_entry,
+			     uint8_t rsno_gen)
+{
+	if (!scan_entry)
+		return NULL;
+
+	if (rsno_gen == RSN_LEGACY || !util_scan_is_mrsn_supported())
+		return scan_entry->ie_list.rsnxe;
+
+	return scan_entry->ie_list.rsnxo;
+}
+
+uint8_t
+util_get_rsnxe_len_by_gen(struct scan_cache_entry *scan_entry,
+			  uint8_t rsno_gen)
+{
+	if (!scan_entry)
+		return 0;
+
+	if (rsno_gen == RSN_LEGACY || !util_scan_is_mrsn_supported()) {
+		if (scan_entry->ie_list.rsnxe)
+			return scan_entry->ie_list.rsnxe[1];
+		return 0;
+	}
+
+	if (scan_entry->ie_list.rsnxo)
+		return scan_entry->ie_list.rsnxo[1] - 4;
+
+	return 0;
+}

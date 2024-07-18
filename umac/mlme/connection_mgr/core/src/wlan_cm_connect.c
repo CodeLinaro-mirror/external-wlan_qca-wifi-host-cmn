@@ -1421,9 +1421,8 @@ cm_connect_fetch_candidates(struct wlan_objmgr_pdev *pdev,
 	bool security_valid_for_6ghz;
 	const uint8_t *rsnxe;
 
-	rsnxe = wlan_get_ie_ptr_from_eid(WLAN_ELEMID_RSNXE,
-					 cm_req->req.assoc_ie.ptr,
-					 cm_req->req.assoc_ie.len);
+	rsnxe = wlan_get_rsnxe_data_from_ie_ptr(cm_req->req.assoc_ie.ptr,
+						cm_req->req.assoc_ie.len);
 	security_valid_for_6ghz =
 		wlan_cm_6ghz_allowed_for_akm(wlan_pdev_get_psoc(pdev),
 					     cm_req->req.crypto.akm_suites,
