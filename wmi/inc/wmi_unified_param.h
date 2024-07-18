@@ -6395,6 +6395,7 @@ typedef enum {
 	wmi_service_per_link_stats_support,
 #endif
 	wmi_service_aux_mac_support,
+	wmi_service_mrsno_support,
 	wmi_services_max,
 } wmi_conv_service_ids;
 #define WMI_SERVICE_UNAVAILABLE 0xFFFF
