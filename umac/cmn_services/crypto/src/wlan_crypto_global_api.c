@@ -1967,7 +1967,8 @@ QDF_STATUS wlan_crypto_demic(struct wlan_objmgr_vdev *vdev,
 	return status;
 }
 
-bool wlan_crypto_vdev_is_pmf_enabled(struct wlan_objmgr_vdev *vdev)
+bool wlan_crypto_vdev_is_pmf_enabled(struct wlan_objmgr_vdev *vdev,
+				     uint8_t rsno_gen)
 {
 
 	struct wlan_crypto_comp_priv *crypto_priv;
@@ -1975,10 +1976,16 @@ bool wlan_crypto_vdev_is_pmf_enabled(struct wlan_objmgr_vdev *vdev)
 
 	if (!vdev)
 		return false;
-	vdev_crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
-							&crypto_priv);
-	if (!crypto_priv) {
-		crypto_err("crypto_priv NULL");
+
+	if (rsno_gen && rsno_gen != RSN_LEGACY)
+		vdev_crypto_params = wlan_crypto_vdev_get_rsno_crypto(vdev,
+								      rsno_gen);
+	else
+		vdev_crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+								&crypto_priv);
+
+	if (!vdev_crypto_params) {
+		crypto_err("ULL crypto params");
 		return false;
 	}
 
@@ -1992,7 +1999,8 @@ bool wlan_crypto_vdev_is_pmf_enabled(struct wlan_objmgr_vdev *vdev)
 	return false;
 }
 
-bool wlan_crypto_vdev_is_pmf_required(struct wlan_objmgr_vdev *vdev)
+bool wlan_crypto_vdev_is_pmf_required(struct wlan_objmgr_vdev *vdev,
+				      uint8_t rsno_gen)
 {
 	struct wlan_crypto_comp_priv *crypto_priv;
 	struct wlan_crypto_params *vdev_crypto_params;
@@ -2000,10 +2008,14 @@ bool wlan_crypto_vdev_is_pmf_required(struct wlan_objmgr_vdev *vdev)
 	if (!vdev)
 		return false;
 
-	vdev_crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
-							      &crypto_priv);
-	if (!crypto_priv) {
-		crypto_err("crypto_priv NULL");
+	if (rsno_gen && rsno_gen != RSN_LEGACY)
+		vdev_crypto_params = wlan_crypto_vdev_get_rsno_crypto(vdev,
+								      rsno_gen);
+	else
+		vdev_crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+								&crypto_priv);
+	if (!vdev_crypto_params) {
+		crypto_err("NULL crypto params");
 		return false;
 	}
 
@@ -3363,7 +3375,7 @@ bool wlan_crypto_rsn_info(struct wlan_objmgr_vdev *vdev,
 	struct wlan_crypto_params *my_crypto_params;
 	my_crypto_params = wlan_crypto_vdev_get_crypto_params(vdev);
 
-	if (rsno_gen)
+	if (rsno_gen && rsno_gen != RSN_LEGACY)
 		my_crypto_params =
 			wlan_crypto_vdev_get_rsno_crypto(vdev, rsno_gen);
 
@@ -3393,12 +3405,12 @@ bool wlan_crypto_rsn_info(struct wlan_objmgr_vdev *vdev,
 		crypto_debug("Key mgmt match failed");
 		return false;
 	}
-	if (wlan_crypto_vdev_is_pmf_required(vdev) &&
+	if (wlan_crypto_vdev_is_pmf_required(vdev, rsno_gen) &&
 	    !(crypto_params->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_ENABLED)) {
 		crypto_debug("Peer is not PMF capable");
 		return false;
 	}
-	if (!wlan_crypto_vdev_is_pmf_enabled(vdev) &&
+	if (!wlan_crypto_vdev_is_pmf_enabled(vdev, rsno_gen) &&
 	    (crypto_params->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_REQUIRED)) {
 		crypto_debug("Peer needs PMF, but vdev is not capable");
 		return false;
