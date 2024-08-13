@@ -352,4 +352,16 @@
 #define CFG80211_CTRL_FRAME_SRC_ADDR_TA_ADDR 1
 #endif
 
+/*
+ * CFG80211_EXT_FEATURE_AP_PMKSA_CACHING
+ * Used to indicate Linux kernel contains support to cache PMKSA for AP mode
+ *
+ * This feature was introduced in Linux Kernel 5.1 via:
+ * nl80211: Allow set/del pmksa operations for AP
+ * https://github.com/torvalds/linux/commit/6c900360e7c0df6a4846ac97d7b548d72cd801b0
+ */
+#if ((LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)) || \
+	(defined CFG80211_EXT_FEATURE_AP_PMKSA_CACHING))
+#define WLAN_EXT_FEATURE_AP_PMKSA_CACHING
+#endif
 #endif
