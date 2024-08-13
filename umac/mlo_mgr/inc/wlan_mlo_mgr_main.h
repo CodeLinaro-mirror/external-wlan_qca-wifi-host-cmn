@@ -1109,5 +1109,10 @@ QDF_STATUS wlan_mlo_mgr_mld_vdev_detach(struct wlan_objmgr_vdev *vdev)
 	return QDF_STATUS_SUCCESS;
 }
 
+static inline struct wlan_mlo_dev_context *
+wlan_mlo_get_mld_ctx_by_mldaddr(struct qdf_mac_addr *mldaddr)
+{
+	return NULL;
+}
 #endif
 #endif
