@@ -4716,7 +4716,7 @@ static void dp_htt_t2h_msg_handler(void *context, HTC_PACKET *pkt)
 					0, tid, 0, win_sz + 1, 0xffff);
 
 				dp_addba_resp_tx_completion_wifi3(
-					(struct cdp_soc_t *)soc,
+					(struct cdp_soc_t *)soc->dp_soc,
 					peer->mac_addr.raw, peer->vdev->vdev_id,
 					tid,
 					status);
