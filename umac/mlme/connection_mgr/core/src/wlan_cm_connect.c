@@ -482,7 +482,7 @@ static void cm_update_vdev_mlme_macaddr(struct cnx_mgr *cm_ctx,
 	mac = (struct qdf_mac_addr *)wlan_vdev_mlme_get_mldaddr(cm_ctx->vdev);
 
 	if (req->cur_candidate->entry->ie_list.multi_link_bv &&
-	    req->req.ml_parnter_info.num_partner_links &&
+	    req->cur_candidate->entry->neg_sec_info.rsn_gen_selected != RSNO_GEN_WIFI6 &&
 	    !qdf_is_macaddr_zero(mac)) {
 		wlan_vdev_obj_lock(cm_ctx->vdev);
 		/* Use link address for ML connection */

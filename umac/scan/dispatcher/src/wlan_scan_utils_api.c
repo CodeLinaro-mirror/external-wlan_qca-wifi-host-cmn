@@ -4036,3 +4036,39 @@ util_get_rsnxe_len_by_gen(struct scan_cache_entry *scan_entry,
 
 	return 0;
 }
+
+QDF_STATUS
+util_scan_is_valid_rsn_present(struct scan_cache_entry *entry,
+			       struct wlan_crypto_params *params)
+{
+	uint8_t *rsn_ie = NULL;
+	QDF_STATUS status = QDF_STATUS_E_INVAL;
+
+	/*
+	 * Atleast one RSN(O) element must have a valid AKM/cipher.
+	 * Otherwise the beacon is invalid.
+	 */
+
+	rsn_ie = entry->ie_list.rsn;
+	if (rsn_ie) {
+		status = wlan_crypto_rsnie_check(params, rsn_ie);
+		if (QDF_IS_STATUS_SUCCESS(status))
+			return status;
+	}
+
+	rsn_ie = entry->ie_list.wifi6_rsno;
+	if (rsn_ie) {
+		status = wlan_crypto_rsnie_check(params, rsn_ie);
+		if (QDF_IS_STATUS_SUCCESS(status))
+			return status;
+	}
+
+	rsn_ie = entry->ie_list.wifi7_rsno;
+	if (rsn_ie) {
+		status = wlan_crypto_rsnie_check(params, rsn_ie);
+		if (QDF_IS_STATUS_SUCCESS(status))
+			return status;
+	}
+
+	return QDF_STATUS_E_INVAL;
+}
