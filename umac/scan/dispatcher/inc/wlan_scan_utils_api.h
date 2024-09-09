@@ -36,7 +36,6 @@
 #include "wlan_mlo_mgr_public_structs.h"
 #endif
 #include "wlan_objmgr_global_obj.h"
-#include "../../core/src/wlan_scan_main.h"
 
 #define ASCII_SPACE_CHARACTER 32
 

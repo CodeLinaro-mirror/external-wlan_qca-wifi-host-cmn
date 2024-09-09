@@ -187,3 +187,17 @@ int32_t wlan_crypto_get_key_mgmt(struct wlan_crypto_params *crypto_params)
 {
 	return crypto_params->key_mgmt;
 }
+
+QDF_STATUS wlan_crypto_set_random_pmkid(
+				struct wlan_crypto_params *crypto_params,
+				uint32_t value)
+{
+	crypto_params->random_pmkid_cnt = value;
+
+	return QDF_STATUS_SUCCESS;
+}
+
+int32_t wlan_crypto_get_random_pmkid(struct wlan_crypto_params *crypto_params)
+{
+	return crypto_params->random_pmkid_cnt;
+}
