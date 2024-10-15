@@ -2536,91 +2536,6 @@ cm_update_bss_score_for_mac_addr_matching(struct scan_cache_node *scan_entry,
 }
 #endif
 
-#ifdef WLAN_FEATURE_11BE_MLO_ADV_FEATURE
-#define QDF_PTR_EQUAL(_ptr1, _ptr2) \
-	((_ptr1) ? (_ptr2) ? true : false : (_ptr2) ? false : true)
-static bool cm_entries_contain_cmn_akm(struct scan_cache_entry *entry1,
-				       struct scan_cache_entry *entry2)
-{
-	struct security_info *entry1_sec_info, *entry2_sec_info;
-
-	if (!QDF_PTR_EQUAL(entry1->ie_list.rsn, entry2->ie_list.rsn))
-		return false;
-
-	entry1_sec_info = &entry1->neg_sec_info;
-	entry2_sec_info = &entry2->neg_sec_info;
-
-	/* Check if MFPC is equal */
-	if ((entry1_sec_info->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_ENABLED) ^
-	    (entry2_sec_info->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_ENABLED)) {
-		mlme_debug("MFPC capability is not equal %d, %d",
-			   entry1_sec_info->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_ENABLED,
-			   entry2_sec_info->rsn_caps & WLAN_CRYPTO_RSN_CAP_MFP_ENABLED);
-		return false;
-	}
-
-	/* Check AKM suite */
-	if (!(entry1_sec_info->key_mgmt & entry2_sec_info->key_mgmt)) {
-		mlme_debug("Intersected AKM bitmap NULL 0x%lx, 0x%lx",
-			   entry1_sec_info->key_mgmt,
-			   entry2_sec_info->key_mgmt);
-		return false;
-	}
-
-	/* Check UC cipher suite */
-	if (!(entry1_sec_info->ucastcipherset & entry2_sec_info->ucastcipherset)) {
-		mlme_debug("Intersected UC cipher bitmap NULL 0x%lx, 0x%lx",
-			   entry1_sec_info->ucastcipherset,
-			   entry2_sec_info->ucastcipherset);
-		return false;
-	}
-
-	/* Check MC cipher suite */
-	if (!(entry1_sec_info->mcastcipherset & entry2_sec_info->mcastcipherset)) {
-		mlme_debug("Intersected MC cipher bitmap NULL 0x%lx, 0x%lx",
-			   entry1_sec_info->mcastcipherset,
-			   entry2_sec_info->mcastcipherset);
-		return false;
-	}
-
-	return true;
-}
-
-static void cm_validate_partner_links_rsn_cap(struct scan_cache_entry *entry,
-					      qdf_list_t *scan_list)
-{
-	uint8_t idx;
-	struct scan_cache_entry *partner_entry;
-	struct partner_link_info *partner_info;
-
-	if (!entry->ie_list.multi_link_bv || !entry->ml_info.num_links)
-		return;
-
-	for (idx = 0; idx < entry->ml_info.num_links; idx++) {
-		partner_info = &entry->ml_info.link_info[idx];
-		if (!partner_info->is_valid_link)
-			continue;
-
-		partner_entry = cm_get_entry(scan_list, &partner_info->link_addr);
-		if (!partner_entry)
-			continue;
-
-		if (cm_entries_contain_cmn_akm(entry, partner_entry))
-			continue;
-
-		partner_info->is_valid_link = false;
-		mlme_debug("partner link (%d) akm not matching",
-			   partner_info->freq);
-	}
-}
-#else
-static inline void
-cm_validate_partner_links_rsn_cap(struct scan_cache_entry *entry,
-				  qdf_list_t *scan_list)
-{
-}
-#endif
-
 void wlan_cm_calculate_bss_score(struct wlan_objmgr_pdev *pdev,
 				 struct pcl_freq_weight_list *pcl_lst,
 				 qdf_list_t *scan_list,
@@ -2707,7 +2622,6 @@ void wlan_cm_calculate_bss_score(struct wlan_objmgr_pdev *pdev,
 			}
 		}
 
-		cm_validate_partner_links_rsn_cap(scan_entry->entry, scan_list);
 		if (denylist_action == CM_DLM_NO_ACTION ||
 		    (are_all_candidate_denylisted && denylist_action ==
 		     CM_DLM_REMOVE)) {
