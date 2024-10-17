@@ -548,6 +548,7 @@ bool cm_is_ml_connection(struct wlan_objmgr_vdev *vdev,
 	if (eht_capab && !qdf_is_macaddr_zero(mld_mac) &&
 	    req->cur_candidate->entry->ie_list.multi_link_bv &&
 		req->req.ml_parnter_info.num_partner_links &&
+		req->cur_candidate->entry->neg_sec_info.rsn_gen_selected != RSNO_GEN_WIFI6 &&
 	    wlan_cm_is_eht_allowed_for_current_security(wlan_vdev_get_psoc(vdev),
 							req->cur_candidate->entry,
 							true))
