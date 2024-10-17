@@ -828,10 +828,6 @@ int osif_cm_connect(struct net_device *dev, struct wlan_objmgr_vdev *vdev,
 		}
 		qdf_mem_copy(connect_req->assoc_ie.ptr, req->ie,
 			     connect_req->assoc_ie.len);
-
-		ucfg_scan_set_mrsno_support(wlan_vdev_get_psoc(vdev),
-					    wlan_is_rsn_override_present(req->ie,
-									 req->ie_len));
 	}
 
 	status = osif_cm_set_fils_info(vdev, connect_req, req);
