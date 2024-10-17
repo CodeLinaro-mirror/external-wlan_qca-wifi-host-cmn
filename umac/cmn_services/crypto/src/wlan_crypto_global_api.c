@@ -2833,7 +2833,16 @@ QDF_STATUS wlan_crypto_rsnie_check(struct wlan_crypto_params *crypto_params,
 
 	SET_AUTHMODE(crypto_params, WLAN_CRYPTO_AUTH_RSNA);
 
-	frm += 2;
+	if (frm[0] == WLAN_ELEMID_RSN) {
+		len = frm[1];
+		frm += 2;
+	} else if (frm[0] == WLAN_ELEMID_VENDOR) {
+		if (frm[1] <= RSNO_OUI_SIZE)
+			return QDF_STATUS_E_INVAL;
+		len = frm[1] - RSNO_OUI_SIZE;
+		frm += 2 + RSNO_OUI_SIZE;
+	}
+
 	/* NB: iswapoui already validated the OUI and type */
 	w = LE_READ_2(frm);
 	if (w != RSN_VERSION)
@@ -4030,7 +4039,7 @@ wlan_get_crypto_params_from_rsn_ie(struct wlan_crypto_params *crypto_params,
 	QDF_STATUS status;
 
 	qdf_mem_zero(crypto_params, sizeof(struct wlan_crypto_params));
-	rsn_ie = wlan_get_ie_ptr_from_eid(WLAN_ELEMID_RSN, ie_ptr, ie_len);
+	rsn_ie = wlan_get_rsn_data_from_ie_ptr(ie_ptr, ie_len);
 	if (!rsn_ie) {
 		crypto_debug("RSN IE not present");
 		return QDF_STATUS_E_INVAL;
@@ -4193,15 +4202,23 @@ wlan_crypto_reset_prarams(struct wlan_crypto_params *params)
 const uint8_t *
 wlan_crypto_parse_rsnxe_ie(const uint8_t *rsnxe_ie, uint8_t *cap_len)
 {
-	uint8_t len;
+	uint8_t len = 0;
 	const uint8_t *ie;
 
 	if (!rsnxe_ie)
 		return NULL;
 
 	ie = rsnxe_ie;
-	len = ie[1];
-	ie += 2;
+
+	if (rsnxe_ie[0] == WLAN_ELEMID_RSNXE) {
+		len = rsnxe_ie[1];
+		ie += 2;
+	} else if (rsnxe_ie[0] == WLAN_ELEMID_VENDOR) {
+		if (rsnxe_ie[1] <= RSNO_OUI_SIZE)
+			return NULL;
+		len = rsnxe_ie[1] - RSNO_OUI_SIZE;
+		ie += 2 + RSNO_OUI_SIZE;
+	}
 
 	if (!len)
 		return NULL;
@@ -4211,9 +4228,9 @@ wlan_crypto_parse_rsnxe_ie(const uint8_t *rsnxe_ie, uint8_t *cap_len)
 	return ie;
 }
 
-QDF_STATUS wlan_set_vdev_crypto_prarams_from_ie(struct wlan_objmgr_vdev *vdev,
-						uint8_t *ie_ptr,
-						uint16_t ie_len)
+QDF_STATUS wlan_set_vdev_crypto_params_from_ie(struct wlan_objmgr_vdev *vdev,
+					       uint8_t *ie_ptr,
+					       uint16_t ie_len)
 {
 	struct wlan_crypto_params crypto_params;
 	QDF_STATUS status;
