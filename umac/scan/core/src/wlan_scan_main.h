@@ -558,6 +558,7 @@ struct scan_cb {
  * @allow_bss_with_incomplete_ie: Continue scan entry even if any corrupted
  *                                IEs are present.
  * @aux_mac_support: advertise aux mac support from FW
+ * @mrsno_support: mrsno supported by supplicant
  */
 struct wlan_scan_obj {
 	uint32_t scan_disabled;
@@ -595,6 +596,7 @@ struct wlan_scan_obj {
 	uint16_t duty_cycle_cnt_6ghz;
 	bool allow_bss_with_incomplete_ie;
 	bool aux_mac_support;
+	uint8_t mrsno_support;
 };
 
 #ifdef ENABLE_SCAN_PROFILE

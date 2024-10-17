@@ -37,6 +37,7 @@
 #if defined(WLAN_FEATURE_11BE_MLO) && defined(WLAN_MLO_MULTI_CHIP)
 #include <wlan_mlo_mgr_setup.h>
 #endif
+#include <wlan_scan_ucfg_api.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0) && \
 LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0) && \
@@ -827,6 +828,10 @@ int osif_cm_connect(struct net_device *dev, struct wlan_objmgr_vdev *vdev,
 		}
 		qdf_mem_copy(connect_req->assoc_ie.ptr, req->ie,
 			     connect_req->assoc_ie.len);
+
+		ucfg_scan_set_mrsno_support(wlan_vdev_get_psoc(vdev),
+					    wlan_is_rsn_override_present(req->ie,
+									 req->ie_len));
 	}
 
 	status = osif_cm_set_fils_info(vdev, connect_req, req);

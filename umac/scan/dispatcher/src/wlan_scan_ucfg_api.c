@@ -830,6 +830,7 @@ wlan_scan_global_init(struct wlan_objmgr_psoc *psoc,
 	scan_obj->scan_def.last_scan_ageout_time =
 		cfg_get(psoc, CFG_LAST_SCAN_AGEOUT_TIME);
 	scan_obj->aux_mac_support = false;
+	scan_obj->mrsno_support = false;
 
 	/* init scan id seed */
 	qdf_atomic_init(&scan_obj->scan_ids);
@@ -1785,3 +1786,16 @@ ucfg_scan_get_user_config_sched_scan_plan(struct wlan_objmgr_psoc *psoc)
 	return scan_obj->pno_cfg.user_config_sched_scan_plan;
 }
 #endif
+void ucfg_scan_set_mrsno_support(struct wlan_objmgr_psoc *psoc, uint8_t value)
+{
+	struct wlan_scan_obj *scan_obj;
+
+	scan_obj = wlan_psoc_get_scan_obj(psoc);
+	if (!scan_obj) {
+		scm_err("NULL scan obj");
+		return;
+	}
+
+	scm_debug("MRSNO support for current connection is: %d", value);
+	scan_obj->mrsno_support = value;
+}
