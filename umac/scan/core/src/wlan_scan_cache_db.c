@@ -938,9 +938,9 @@ scm_find_duplicate(struct wlan_objmgr_pdev *pdev,
 /*
  * Buffer len size to add the dynamic scan frame debug info
  * 7 (pdev id) + 21 (security info) + 8 (hidden info) + 15 (chan mismatch) +
- * 8 (CSA IE info) + 31 (ML info) + 5 extra
+* 8 (CSA IE info) + 31 (ML info) + 10 extra
  */
-#define SCAN_DUMP_MAX_LEN 95
+#define SCAN_DUMP_MAX_LEN 100
 
 #ifdef WLAN_FEATURE_11BE_MLO
 /**
@@ -995,7 +995,7 @@ static void scm_dump_scan_entry(struct wlan_objmgr_pdev *pdev,
 	security_type = scan_params->security_type;
 	if (security_type)
 		len += qdf_scnprintf(log_str + len, str_len - len,
-				     "%s%s%s%s",
+				     "%s%s%s%s%s",
 				     security_type & SCAN_SECURITY_TYPE_WPA ?
 				     "[WPA]" : "",
 				     security_type & SCAN_SECURITY_TYPE_RSN ?
@@ -1003,7 +1003,9 @@ static void scm_dump_scan_entry(struct wlan_objmgr_pdev *pdev,
 				     security_type & SCAN_SECURITY_TYPE_WAPI ?
 				     "[WAPI]" : "",
 				     security_type & SCAN_SECURITY_TYPE_WEP ?
-				     "[WEP]" : "");
+				     "[WEP]" : "",
+				     security_type & SCAN_SECURITY_TYPE_RSNO ?
+				     "[RSNO]" : "");
 
 	/* Add hidden info if present */
 	if (scan_params->is_hidden_ssid)
