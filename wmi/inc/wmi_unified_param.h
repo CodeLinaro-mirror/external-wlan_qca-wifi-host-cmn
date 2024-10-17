@@ -6710,6 +6710,7 @@ typedef enum {
 	wmi_service_mlo_tid_to_link_mapping_support,
 #endif
 	wmi_service_aux_mac_support,
+	wmi_service_mrsno_support,
 #ifdef WLAN_ATF_INCREASED_STA
 	wmi_service_atf_max_client_512_support,
 #endif

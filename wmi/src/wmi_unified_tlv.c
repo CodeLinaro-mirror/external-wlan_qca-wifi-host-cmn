@@ -24046,6 +24046,7 @@ static void populate_tlv_service(uint32_t *wmi_service)
 		WMI_SERVICE_MLO_TID_TO_LINK_MAPPING_SUPPORT;
 #endif
 	wmi_service[wmi_service_aux_mac_support] = WMI_SERVICE_AUX_MAC_SUPPORT;
+	wmi_service[wmi_service_mrsno_support] = WMI_SERVICE_MULTI_RSNO_SUPPORT;
 #ifdef WLAN_ATF_INCREASED_STA
 	wmi_service[wmi_service_atf_max_client_512_support] =
 					WMI_SERVICE_ATF_MAX_CLIENT_512_SUPPORT;
