@@ -2469,33 +2469,7 @@ qdf_export_symbol(wlan_util_is_vdev_in_cac_wait);
 const uint8_t *wlan_get_rsn_data_from_ie_ptr(const uint8_t *ie_ptr,
 					     int ie_len)
 {
-	const uint8_t *rsn_ie;
-
-	/*
-	 * Order of precedence between RSN and MRSNO IEs:
-	 * Wifi7 MRSNO IE > Wifi6 MRSNO IE > Legacy RSN IE
-	 *
-	 * Note: Wifi-7 RSNO should be used only if the connection
-	 * is an EHT connection
-	 */
-
-	rsn_ie = wlan_get_vendor_ie_ptr_from_oui(RSNO_OUI_WIFI7_RSN,
-						 RSNO_OUI_SIZE,
-						 ie_ptr, ie_len);
-	if (rsn_ie && rsn_ie[1] > RSNO_OUI_SIZE)
-		return rsn_ie;
-
-	rsn_ie = wlan_get_vendor_ie_ptr_from_oui(RSNO_OUI_WIFI6_RSN,
-						 RSNO_OUI_SIZE,
-						 ie_ptr, ie_len);
-	if (rsn_ie && rsn_ie[1] > RSNO_OUI_SIZE)
-		return rsn_ie;
-
-	rsn_ie = wlan_get_ie_ptr_from_eid(WLAN_ELEMID_RSN, ie_ptr, ie_len);
-	if (rsn_ie)
-		return rsn_ie;
-
-	return NULL;
+	return wlan_get_ie_ptr_from_eid(WLAN_ELEMID_RSN, ie_ptr, ie_len);
 }
 
 const uint8_t *wlan_get_rsnxe_data_from_ie_ptr(const uint8_t *ie_ptr,
