@@ -430,6 +430,7 @@ uint8_t *wlan_crypto_build_wapiie(struct wlan_objmgr_vdev *vdev,
  * wlan_crypto_rsn_info() - check is given params matching with vdev params.
  * @vdev: vdev
  * @crypto_params: crypto params
+ * @rsno_gen: type of RSN used
  *
  * This function gets called by mlme to check is given params matching with
  * vdev params.
@@ -437,7 +438,8 @@ uint8_t *wlan_crypto_build_wapiie(struct wlan_objmgr_vdev *vdev,
  * Return: true success or false for failure.
  */
 bool wlan_crypto_rsn_info(struct wlan_objmgr_vdev *vdev,
-				struct wlan_crypto_params *crypto_params);
+			  struct wlan_crypto_params *crypto_params,
+			  uint8_t rsno_gen);
 
 /**
  * wlan_crypto_pn_check() - called by data patch for PN check
@@ -461,6 +463,17 @@ QDF_STATUS wlan_crypto_pn_check(struct wlan_objmgr_vdev *vdev,
  */
 struct wlan_crypto_params *wlan_crypto_vdev_get_crypto_params(
 						struct wlan_objmgr_vdev *vdev);
+
+/*
+ * wlan_crypto_vdev_get_rsno_crypto() - called by mlme to get crypto params
+ * based on the RSNO generation
+ * @vdev: vdev
+ * @gen: RSN generation
+ *
+ * Return: wlan_crypto_params or NULL in case of failure
+ */
+struct wlan_crypto_params *
+wlan_crypto_vdev_get_rsno_crypto(struct wlan_objmgr_vdev *vdev, uint8_t gen);
 
 /**
  * wlan_crypto_peer_get_crypto_params() - called by mlme to get crypto params
@@ -714,20 +727,20 @@ void wlan_crypto_restore_keys(struct wlan_objmgr_vdev *vdev);
 
 /**
  * wlan_crypto_check_rsn_match() - called by ucfg to check for RSN match
- * @psoc: psoc pointer
- * @vdev_id: vdev id
+ * @vdev: pointer to vdev
  * @ie_ptr: pointer to IEs
  * @ie_len: IE length
  * @peer_crypto_params: return peer crypto parameters
+ * @rsno_gen: rsno generation used
  *
  * This function gets called from ucfg to check RSN match.
  *
  * Return: true or false
  */
-bool wlan_crypto_check_rsn_match(struct wlan_objmgr_psoc *psoc,
-				 uint8_t vdev_id, uint8_t *ie_ptr,
-				 uint16_t ie_len, struct wlan_crypto_params *
-				 peer_crypto_params);
+bool wlan_crypto_check_rsn_match(struct wlan_objmgr_vdev *vdev,
+				 uint8_t *ie_ptr, uint16_t ie_len,
+				 struct wlan_crypto_params *peer_crypto_params,
+				 uint8_t rsno_gen);
 
 /**
  * wlan_crypto_check_wpa_match() - called by ucfg to check for WPA match
