@@ -24191,6 +24191,9 @@ static void populate_tlv_service(uint32_t *wmi_service)
 #endif
 	wmi_service[wmi_service_ap_assisted_dfs_chan_p2p_session] =
 				WMI_SERVICE_AP_ASSISTED_DFS_CHAN_P2P_SESSION;
+#ifdef FEATURE_WLAN_SUPPORT_USD
+	wmi_service[wmi_service_usd_support] = WMI_SERVICE_USD_SUPPORT;
+#endif
 }
 
 /**
