@@ -18944,6 +18944,7 @@ enum qca_wlan_vendor_attr_connect_ext {
 	QCA_WLAN_VENDOR_ATTR_CONNECT_EXT_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONNECT_EXT_MAX =
 	QCA_WLAN_VENDOR_ATTR_CONNECT_EXT_AFTER_LAST - 1,
+};
 
 /*
  * enum qca_wlan_vendor_p2p_mode - Defines the values used with
