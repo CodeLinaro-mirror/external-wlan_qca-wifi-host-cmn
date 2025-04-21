@@ -48,6 +48,8 @@ static uint32_t get_infra_cp_stats_id(enum infra_cp_stats_id type)
 		return WMI_REQUEST_CTRL_PATH_PMLO_STAT;
 	case TYPE_REQ_CTRL_PATH_RRM_STA_STAT:
 		return WMI_REQUEST_CTRL_STA_RRM_STAT;
+	case TYPE_REQ_CTRL_PATH_DAR_STAT:
+		return WMI_REQUEST_CTRL_PATH_STA_DAR_STAT;
 	default:
 		return -EINVAL;
 	}
@@ -198,10 +200,51 @@ wmi_rrm_extract_sta_stats_struct(void *tag_buf,
 	rrm_sta_stats = params->sta_stats;
 	wmi_extract_ctrl_path_rrm_sta_stats_tlv(tag_buf, rrm_sta_stats);
 }
+
+static void
+wmi_extract_dar_stats_struct(void *tag_buf,
+			     struct infra_cp_stats_event *params)
+{
+	struct cp_sta_stats *stats;
+	struct cp_stats_dar *dar_stats;
+	wmi_ctrl_path_sta_dar_stats_struct *wmi_stats_buf =
+			(wmi_ctrl_path_sta_dar_stats_struct *)tag_buf;
+
+	stats = params->sta_stats;
+	dar_stats = &stats->dar_stats[0];
+	if (dar_stats->filled)
+		dar_stats = &stats->dar_stats[1];
+
+	dar_stats->vdev_id = wmi_stats_buf->vdev_id;
+	dar_stats->stats_gran = wmi_stats_buf->stats_granularity;
+	dar_stats->transmit_pwr = wmi_stats_buf->transmit_pwr;
+	dar_stats->cycle_cnt = wmi_stats_buf->cycle_cnt;
+	dar_stats->cca_busy_cnt = wmi_stats_buf->cca_busy_cnt;
+	qdf_mem_copy(dar_stats->success_mpdu_tx_cnt,
+		     wmi_stats_buf->success_mpdu_tx_cnt,
+		     DATA_TID_MAX * sizeof(uint32_t));
+	qdf_mem_copy(dar_stats->dropped_mpdu_tx_cnt,
+		     wmi_stats_buf->ack_fail_cnt,
+		     DATA_TID_MAX * sizeof(uint32_t));
+	qdf_mem_copy(dar_stats->rts_success_cnt, wmi_stats_buf->rts_success_cnt,
+		     DATA_TID_MAX * sizeof(uint32_t));
+	qdf_mem_copy(dar_stats->rts_failure_cnt, wmi_stats_buf->rts_fail_cnt,
+		     DATA_TID_MAX * sizeof(uint32_t));
+	qdf_mem_copy(dar_stats->fcs_failure_cnt, wmi_stats_buf->fcs_fail_cnt,
+		     DATA_TID_MAX * sizeof(uint32_t));
+	dar_stats->ba_nego_fail_cnt = wmi_stats_buf->ba_nego_fail_cnt;
+	dar_stats->beacon_loss_cnt = wmi_stats_buf->beacon_loss_cnt;
+	dar_stats->filled = true;
+}
 #else
 static inline void
 wmi_rrm_extract_sta_stats_struct(void *tag_buf,
 				 struct infra_cp_stats_event *params)
+{}
+
+static void
+wmi_extract_dar_stats_struct(void *tag_buf,
+			     struct infra_cp_stats_event *params)
 {}
 #endif
 
@@ -405,7 +448,6 @@ static void wmi_stats_extract_tag_struct(wmi_unified_t wmi_handle,
 					 uint32_t tag_type, void *tag_buf,
 					 struct infra_cp_stats_event *params)
 {
-	wmi_debug("tag_type %d", tag_type);
 
 	switch (tag_type) {
 	case WMITLV_TAG_STRUC_wmi_ctrl_path_pdev_stats_struct:
@@ -428,6 +470,10 @@ static void wmi_stats_extract_tag_struct(wmi_unified_t wmi_handle,
 
 	case WMITLV_TAG_STRUC_wmi_ctrl_path_sta_rrm_stats_struct:
 		wmi_rrm_extract_sta_stats_struct(tag_buf, params);
+		break;
+
+	case WMITLV_TAG_STRUC_wmi_ctrl_path_sta_dar_stats_struct:
+		wmi_extract_dar_stats_struct(tag_buf, params);
 		break;
 
 	default:
@@ -575,6 +621,7 @@ prepare_infra_cp_stats_buf(wmi_unified_t wmi_handle,
 	cmd_fixed_param->request_id = stats_req->request_id;
 	cmd_fixed_param->action = get_infra_cp_stats_action(stats_req->action);
 	cmd_fixed_param->stat_periodicity = stats_req->stat_periodicity;
+	cmd_fixed_param->stats_granularity = stats_req->stats_granularity;
 
 	buf_ptr = (uint8_t *)cmd_fixed_param;
 	/* Setting tlv header for pdev id arrays*/

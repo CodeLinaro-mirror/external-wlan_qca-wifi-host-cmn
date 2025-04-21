@@ -22,9 +22,9 @@
 #ifndef _WLAN_CP_STATS_PUBLIC_STRUCTS_H_
 #define _WLAN_CP_STATS_PUBLIC_STRUCTS_H_
 
-#define CTRL_PATH_STATS_MAX_MAC_ADDR 1
+#define CTRL_PATH_STATS_MAX_MAC_ADDR 2
 #define CTRL_PATH_STATS_MAX_PDEV_ID 1
-#define CTRL_PATH_STATS_MAX_VDEV_ID 1
+#define CTRL_PATH_STATS_MAX_VDEV_ID 2
 
 
 #define INFRA_CP_STATS_MAX_REQ_TWT_DIALOG_ID 1
@@ -37,6 +37,14 @@
  * stats.
  */
 #define INFRA_CP_STATS_MAX_RESP_TWT_DIALOG_ID 1
+
+#define DATA_TID_MAX 8
+
+#ifdef WLAN_UMAC_MLO_MAX_VDEVS
+#define MAX_VDEV_PER_STA WLAN_UMAC_MLO_MAX_VDEVS
+#else
+#define MAX_VDEV_PER_STA 1
+#endif
 
 #ifdef WLAN_SUPPORT_TWT
 /**
@@ -245,14 +253,57 @@ struct group_id_stats {
 	struct group_id_1 mac_stats;
 };
 
+enum cp_dar_stats_granularity {
+	CP_DAR_STATS_GRANULARITY_INVALID = 0,
+	CP_DAR_STATS_GRANULARITY_TID = 1,
+	CP_DAR_STATS_GRANULARITY_AC = 2,
+};
+
+/**
+ * struct cp_stats_dar - dar stats
+ * @filled: Flag indicating if stats are populated
+ * @vdev_id: Represents the vdev id these stats belong to
+ * @stats_gran: Stats granularity as per @enum cp_dar_stats_granularity
+ * @transmit_pwr: Tx power used by fw/hw to transmit the frames
+ * @cycle_cnt: Sampling window in micro seconds for CCA monitor by HW
+ * @cca_busy_cnt: Number of times CCA busy is hit during above window
+ * @success_mpdu_tx_cnt: Number of MPDU transmitted successfully
+ * @dropped_mpdu_tx_cnt: Dropped MPDU so far(due to tx failures/other issues)
+ * @rts_success_cnt: Number of RTS frames transmitted successfully
+ * @rts_failure_cnt: Number of RTS frames failed to transmit
+ * @fcs_failure_cnt: Number of FCS frames failed to transmit
+ * @ack_failure_cnt: Number of ACK frames failed to transmit
+ * @ba_nego_fail_cnt: Number of Block Ack negotiation failures
+ * @beacon_loss_cnt: Number of times Beacon loss is hit as per the value
+ *		     configured through WMI_VDEV_PARAM_BMISS_FIRST_BCNT
+ */
+struct cp_stats_dar {
+	bool filled;
+	uint8_t vdev_id;
+	enum cp_dar_stats_granularity stats_gran;
+	uint32_t transmit_pwr;
+	uint64_t cycle_cnt;
+	uint64_t cca_busy_cnt;
+	uint32_t success_mpdu_tx_cnt[DATA_TID_MAX];
+	uint32_t dropped_mpdu_tx_cnt[DATA_TID_MAX];
+	uint32_t rts_success_cnt[DATA_TID_MAX];
+	uint32_t rts_failure_cnt[DATA_TID_MAX];
+	uint32_t fcs_failure_cnt[DATA_TID_MAX];
+	uint32_t ack_failure_cnt[DATA_TID_MAX];
+	uint32_t ba_nego_fail_cnt;
+	uint32_t beacon_loss_cnt;
+};
+
 /**
  * struct cp_sta_stats - cp sta stats
  * @sta_stats_group_id: group id
  * @group: group for group stats
+ * @dar_stats: DAR stats as per @struct cp_sta_stats
  */
 struct cp_sta_stats {
 	uint8_t sta_stats_group_id;
 	struct group_id_stats group;
+	struct cp_stats_dar dar_stats[MAX_VDEV_PER_STA];
 };
 
 /**
@@ -305,6 +356,7 @@ enum infra_cp_stats_id {
 	TYPE_REQ_CTRL_PATH_BMISS_STAT,
 	TYPE_REQ_CTRL_PATH_PMLO_STAT,
 	TYPE_REQ_CTRL_PATH_RRM_STA_STAT,
+	TYPE_REQ_CTRL_PATH_DAR_STAT,
 };
 
 /**
@@ -325,6 +377,8 @@ enum infra_cp_stats_id {
  *             255 represents all twt sessions
  * @infra_cp_stats_resp_cb: callback function to handle the response
  * @stat_periodicity: WMI ctrl-path stats event periodicity
+ * @stats_granularity: WMI ctrl-path DAR stats granularity as
+ *		       as per @enum cp_dar_stats_granularity
  */
 struct infra_cp_stats_cmd_info {
 	enum infra_cp_stats_id stats_id;
@@ -343,5 +397,6 @@ struct infra_cp_stats_cmd_info {
 	void (*infra_cp_stats_resp_cb)(struct infra_cp_stats_event *ev,
 				       void *cookie);
 	uint32_t stat_periodicity;
+	uint16_t stats_granularity;
 };
 #endif
