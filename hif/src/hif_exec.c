@@ -800,21 +800,6 @@ void hif_check_and_apply_irq_affinity(struct hif_opaque_softc *hif_ctx,
 		}
 	}
 }
-#else
-static inline void
-hif_exec_update_soft_irq_time(struct hif_exec_context *hif_ext_group)
-{
-}
-
-static inline void
-hif_update_irq_handler_start_time(struct hif_exec_context *hif_ext_group)
-{
-}
-
-static inline void
-hif_update_irq_handle_time(struct hif_exec_context *hif_ext_group)
-{
-}
 #endif /* WLAN_DP_LOAD_BALANCE_SUPPORT */
 
 /**

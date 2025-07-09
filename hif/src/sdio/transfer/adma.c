@@ -469,7 +469,11 @@ void hif_sdio_rx_q_alloc(void *ctx)
 }
 #endif
 
+#ifdef CONFIG_CNSS_OUT_OF_TREE
+#include <qcn_sdio_al.h>
+#else
 #include <linux/qcn_sdio_al.h>
+#endif
 
 struct sdio_al_channel_data qcn7605_chan[HIF_SDIO_MAX_AL_CHANNELS] = {
 	{

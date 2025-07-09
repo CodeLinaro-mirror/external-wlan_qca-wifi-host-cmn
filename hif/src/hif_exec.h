@@ -265,5 +265,23 @@ void hif_pci_config_irq_clear_cpu_affinity(struct hif_softc *scn,
 }
 #endif /* HIF_CPU_CLEAR_AFFINITY */
 
+
+#ifdef WLAN_DP_LOAD_BALANCE_SUPPORT
+static inline void hif_exec_update_soft_irq_time(struct hif_exec_context *hif_ext_group);
+static inline void hif_update_irq_handler_start_time(struct hif_exec_context *hif_ext_group);
+static inline void hif_update_irq_handle_time(struct hif_exec_context *hif_ext_group);
+#else
+static inline void hif_exec_update_soft_irq_time(struct hif_exec_context *hif_ext_group)
+{
+}
+
+static inline void hif_update_irq_handler_start_time(struct hif_exec_context *hif_ext_group)
+{
+}
+
+static inline void hif_update_irq_handle_time(struct hif_exec_context *hif_ext_group)
+{
+}
+#endif
 #endif
 

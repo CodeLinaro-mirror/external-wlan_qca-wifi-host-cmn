@@ -3747,7 +3747,6 @@ hif_disable_ce_custom_cb(struct hif_opaque_softc *hif_ctx, uint8_t pipe)
 }
 #endif /* CUSTOM_CB_SCHEDULER_SUPPORT */
 
-#if defined(CE_TASKLET_SCHEDULE_ON_FULL) && defined(CE_TASKLET_DEBUG_ENABLE)
 #define CE_RING_FULL_THRESHOLD_TIME 3000000
 #define CE_RING_FULL_THRESHOLD 1024
 /* This function is called from htc_send path. If there is no resourse to send
@@ -3774,11 +3773,6 @@ void hif_schedule_ce_tasklet(struct hif_opaque_softc *hif_ctx, uint8_t pipe)
 		ce_dispatch_interrupt(pipe, &hif_state->tasklets[pipe]);
 	}
 }
-#else
-void hif_schedule_ce_tasklet(struct hif_opaque_softc *hif_ctx, uint8_t pipe)
-{
-}
-#endif
 
 uint16_t
 hif_get_free_queue_number(struct hif_opaque_softc *hif_ctx, uint8_t pipe)
@@ -5528,6 +5522,9 @@ QDF_STATUS hif_ce_open(struct hif_softc *hif_sc)
 
 	qdf_spinlock_create(&hif_state->irq_reg_lock);
 	qdf_spinlock_create(&hif_state->keep_awake_lock);
+
+	hif_ce_desc_history_log_register(hif_sc);
+
 	return QDF_STATUS_SUCCESS;
 }
 
@@ -5538,6 +5535,8 @@ QDF_STATUS hif_ce_open(struct hif_softc *hif_sc)
 void hif_ce_close(struct hif_softc *hif_sc)
 {
 	struct HIF_CE_state *hif_state = HIF_GET_CE_STATE(hif_sc);
+
+	hif_ce_desc_history_log_unregister();
 
 	hif_cleanup_static_buf_to_target(hif_sc);
 

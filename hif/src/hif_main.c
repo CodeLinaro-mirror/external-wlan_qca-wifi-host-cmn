@@ -35,6 +35,7 @@
      defined(HIF_IPCI))
 #include "ce_tasklet.h"
 #include "ce_api.h"
+#include "ce_internal.h"
 #endif
 #include "qdf_trace.h"
 #include "qdf_status.h"
@@ -55,7 +56,6 @@
 #include <linux/cpumask.h>
 
 #include <pld_common.h>
-#include "ce_internal.h"
 #include <qdf_tracepoint.h>
 #include "qdf_ssr_driver_dump.h"
 
@@ -1343,7 +1343,6 @@ struct hif_opaque_softc *hif_open(qdf_device_t qdf_ctx,
 	hif_latency_detect_init(scn);
 	hif_affinity_mgr_init(scn, psoc);
 	hif_init_direct_link_rcv_pipe_num(scn);
-	hif_ce_desc_history_log_register(scn);
 	hif_desc_history_log_register();
 	qdf_ssr_driver_dump_register_region("hif", scn, sizeof(*scn));
 
@@ -1386,7 +1385,6 @@ void hif_close(struct hif_opaque_softc *hif_ctx)
 
 	qdf_ssr_driver_dump_unregister_region("hif");
 	hif_desc_history_log_unregister();
-	hif_ce_desc_history_log_unregister();
 	hif_latency_detect_deinit(scn);
 
 	if (scn->athdiag_procfs_inited) {
