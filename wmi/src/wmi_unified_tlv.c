@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -8648,6 +8649,70 @@ static QDF_STATUS send_unit_test_cmd_tlv(wmi_unified_t wmi_handle,
 	return QDF_STATUS_SUCCESS;
 }
 
+#ifdef WLAN_PEER_TID_RATE_CTRL
+/**
+ * send_peer_tid_rate_custom_cmd_tlv() - send peer tid rate custom command to fw.
+ * @wmi_handle: wmi handle
+ * @tid_rate: peer tid rate custom parameter
+ *
+ * This function send peer tid rate custom command to fw.
+ *
+ * Return: QDF STATUS
+ */
+static QDF_STATUS send_peer_tid_rate_custom_cmd_tlv(wmi_unified_t wmi_handle,
+				struct wmi_host_peer_tid_rate *tid_rate)
+{
+	wmi_peer_tid_rate_custom_cmd_fixed_param *cmd;
+	wmi_buf_t wmi_buf;
+	uint8_t *buf_ptr;
+	int i;
+	uint16_t len, rate_code_tlv_len;
+	uint32_t *rate_codes;
+
+	rate_code_tlv_len =
+		WMI_TLV_HDR_SIZE + tid_rate->num_rate_code * sizeof(uint32_t);
+	len = sizeof(wmi_peer_tid_rate_custom_cmd_fixed_param) + rate_code_tlv_len;
+
+	wmi_buf = wmi_buf_alloc(wmi_handle, len);
+	if (!wmi_buf)
+		return QDF_STATUS_E_NOMEM;
+
+	cmd = (wmi_peer_tid_rate_custom_cmd_fixed_param *) wmi_buf_data(wmi_buf);
+	buf_ptr = (uint8_t *) cmd;
+	WMITLV_SET_HDR(&cmd->tlv_header,
+		       WMITLV_TAG_STRUC_wmi_peer_tid_rate_custom_cmd_fixed_param,
+		       WMITLV_GET_STRUCT_TLVLEN(
+		       wmi_peer_tid_rate_custom_cmd_fixed_param));
+	cmd->vdev_id = tid_rate->vdev_id;
+	WMI_CHAR_ARRAY_TO_MAC_ADDR(tid_rate->peer_mac, &cmd->peer_macaddr);
+	cmd->tid = tid_rate->tid;
+	cmd->on_off = tid_rate->on_off;
+	cmd->bw = tid_rate->bw;
+	cmd->retry_count = tid_rate->retry_count;
+
+	buf_ptr += sizeof(wmi_peer_tid_rate_custom_cmd_fixed_param);
+	WMITLV_SET_HDR(buf_ptr, WMITLV_TAG_ARRAY_UINT32,
+		       (tid_rate->num_rate_code * sizeof(uint32_t)));
+	rate_codes = (uint32_t *) (buf_ptr + WMI_TLV_HDR_SIZE);
+	wmi_debug("VDEV ID: %d tid: %d on_off: %d",
+		  cmd->vdev_id, cmd->tid, cmd->on_off);
+	wmi_debug("num of rate_codes = %d", tid_rate->num_rate_code);
+	for (i = 0; (i < tid_rate->num_rate_code && i < MAX_RATE_CODE_NUM); i++) {
+		rate_codes[i] = tid_rate->rate_codes[i];
+		wmi_debug("%d,", tid_rate->rate_codes[i]);
+	}
+	wmi_mtrace(WMI_PEER_TID_RATE_CUSTOM_CMDID, cmd->vdev_id, 0);
+	if (wmi_unified_cmd_send(wmi_handle, wmi_buf, len,
+				 WMI_PEER_TID_RATE_CUSTOM_CMDID)) {
+		wmi_err("Failed to send tid rate config command");
+		wmi_buf_free(wmi_buf);
+		return QDF_STATUS_E_FAILURE;
+	}
+
+	return QDF_STATUS_SUCCESS;
+}
+#endif /* WLAN_PEER_TID_RATE_CTRL */
+
 /**
  * send_power_dbg_cmd_tlv() - send power debug commands
  * @wmi_handle: wmi handle
@@ -14895,6 +14960,9 @@ struct wmi_ops tlv_ops =  {
 		 send_enable_specific_fw_logs_cmd_tlv,
 	.send_flush_logs_to_fw_cmd = send_flush_logs_to_fw_cmd_tlv,
 	.send_unit_test_cmd = send_unit_test_cmd_tlv,
+#ifdef WLAN_PEER_TID_RATE_CTRL
+	.send_peer_tid_rate_custom_cmd = send_peer_tid_rate_custom_cmd_tlv,
+#endif /* WLAN_PEER_TID_RATE_CTRL */
 #ifdef FEATURE_WLAN_APF
 	.send_set_active_apf_mode_cmd = wmi_send_set_active_apf_mode_cmd_tlv,
 	.send_apf_enable_cmd = wmi_send_apf_enable_cmd_tlv,

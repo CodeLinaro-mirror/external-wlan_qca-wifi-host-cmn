@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -1040,6 +1041,18 @@ QDF_STATUS wmi_unified_unit_test_cmd(wmi_unified_t wmi_handle,
 
 	return QDF_STATUS_E_FAILURE;
 }
+
+#ifdef WLAN_PEER_TID_RATE_CTRL
+QDF_STATUS wmi_unified_peer_tid_rate_custom_cmd(wmi_unified_t wmi_handle,
+				struct wmi_host_peer_tid_rate *tid_rate)
+{
+	if (wmi_handle->ops->send_peer_tid_rate_custom_cmd)
+		return wmi_handle->ops->send_peer_tid_rate_custom_cmd(
+						wmi_handle, tid_rate);
+
+	return QDF_STATUS_E_FAILURE;
+}
+#endif /* WLAN_PEER_TID_RATE_CTRL */
 
 #ifdef FEATURE_WLAN_APF
 QDF_STATUS

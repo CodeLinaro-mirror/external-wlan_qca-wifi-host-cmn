@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -1763,6 +1764,20 @@ QDF_STATUS wmi_unified_flush_logs_to_fw_cmd(wmi_unified_t wmi_handle);
  */
 QDF_STATUS wmi_unified_unit_test_cmd(wmi_unified_t wmi_handle,
 				     struct wmi_unit_test_cmd *wmi_utest);
+
+#ifdef WLAN_PEER_TID_RATE_CTRL
+/**
+ * wmi_unified_peer_tid_rate_custom_cmd() - send peer tid rate custom command to fw.
+ * @wmi_handle: wmi handle
+ * @tid_rate: peer tid rate parameter
+ *
+ * This function send peer tid rate custom command to fw.
+ *
+ * Return: QDF_STATUS_SUCCESS on success and QDF_STATUS_E_FAILURE for failure
+ */
+QDF_STATUS wmi_unified_peer_tid_rate_custom_cmd(wmi_unified_t wmi_handle,
+				struct wmi_host_peer_tid_rate *tid_rate);
+#endif /* WLAN_PEER_TID_RATE_CTRL */
 
 #ifdef FEATURE_WLAN_APF
 /**

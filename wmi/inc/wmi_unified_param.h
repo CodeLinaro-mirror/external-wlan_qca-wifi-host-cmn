@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016-2021 The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -50,6 +51,7 @@
 #define WMI_SMPS_MASK_UPPER_3BITS 0x7
 #define WMI_SMPS_PARAM_VALUE_S 29
 #define WMI_UNIT_TEST_MAX_NUM_ARGS 100
+#define MAX_RATE_CODE_NUM 28
 /* The size of the utc time in bytes. */
 #define WMI_SIZE_UTC_TIME (10)
 /* The size of the utc time error in bytes. */
@@ -7839,4 +7841,17 @@ struct wmi_host_inst_rssi_stats_resp {
 	uint32_t vdev_id;
 };
 #endif
+
+#ifdef WLAN_PEER_TID_RATE_CTRL
+struct wmi_host_peer_tid_rate {
+	uint32_t vdev_id;
+	uint8_t peer_mac[QDF_MAC_ADDR_SIZE];
+	uint32_t tid;
+	uint32_t on_off;
+	uint32_t bw;
+	uint32_t retry_count;
+	uint32_t num_rate_code;
+	uint32_t rate_codes[MAX_RATE_CODE_NUM];
+};
+#endif /* WLAN_PEER_TID_RATE_CTRL */
 #endif /* _WMI_UNIFIED_PARAM_H_ */
