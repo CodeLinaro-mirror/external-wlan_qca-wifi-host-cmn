@@ -1109,6 +1109,7 @@ static QDF_STATUS send_vdev_start_cmd_tlv(wmi_unified_t wmi_handle,
 		 req->ldpc_rx_enabled, req->cac_duration_ms,
 		 req->regdomain, req->he_ops,
 		 req->disable_hw_ack);
+	wmi_info("bcn_tx_rate %d, flags 0x%x", cmd->bcn_tx_rate, cmd->flags);
 
 	if (req->is_restart) {
 		wmi_mtrace(WMI_VDEV_RESTART_REQUEST_CMDID, cmd->vdev_id, 0);
