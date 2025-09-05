@@ -3805,6 +3805,7 @@ qdf_nbuf_t dp_tx_comp_free_buf(struct dp_soc *soc, struct dp_tx_desc_s *desc,
 						desc->msdu_ext_desc->tso_desc,
 						desc->msdu_ext_desc->
 						tso_num_desc);
+			desc->flags = desc->flags | DP_TX_DESC_FLAG_UNMAP_DONE;
 			goto nbuf_free;
 		}
 
@@ -3817,6 +3818,7 @@ qdf_nbuf_t dp_tx_comp_free_buf(struct dp_soc *soc, struct dp_tx_desc_s *desc,
 			qdf_nbuf_unmap_nbytes_single(soc->osdev, nbuf,
 						     QDF_DMA_TO_DEVICE,
 						     qdf_nbuf_headlen(nbuf));
+			desc->flags = desc->flags | DP_TX_DESC_FLAG_UNMAP_DONE;
 
 			for (i = 1; i < DP_TX_MAX_NUM_FRAGS; i++) {
 				hal_tx_ext_desc_get_frag_info(msdu_ext_desc, i,
@@ -3838,6 +3840,7 @@ qdf_nbuf_t dp_tx_comp_free_buf(struct dp_soc *soc, struct dp_tx_desc_s *desc,
 
 	dp_tx_desc_history_add(soc, desc->dma_addr, desc->nbuf, desc->id, type);
 	dp_tx_unmap(soc, desc);
+	desc->flags = desc->flags | DP_TX_DESC_FLAG_UNMAP_DONE;
 
 	if (desc->flags & DP_TX_DESC_FLAG_MESH_MODE)
 		return dp_mesh_tx_comp_free_buff(soc, desc, delayed_free);
@@ -8920,6 +8923,7 @@ void dp_tx_desc_flush(struct dp_pdev *pdev, struct dp_vdev *vdev,
 	struct dp_soc *soc = pdev->soc;
 	struct dp_tx_desc_s *tx_desc = NULL;
 	struct dp_tx_desc_pool_s *tx_desc_pool = NULL;
+	uint16_t unmap_nbuf_count = 0, nbuf_match_count = 0;
 
 	if (!vdev && !force_free) {
 		dp_err("Reset TX desc vdev, Vdev param is required!");
@@ -8928,6 +8932,11 @@ void dp_tx_desc_flush(struct dp_pdev *pdev, struct dp_vdev *vdev,
 
 	for (i = 0; i < MAX_TXDESC_POOLS; i++) {
 		tx_desc_pool = &soc->tx_desc[i];
+		dp_info("pool_id %d create_cnt=%d, avail_desc=%d, size=%d, status=%d",
+			tx_desc_pool->flow_pool_id,
+			tx_desc_pool->pool_create_cnt,
+			tx_desc_pool->avail_desc, tx_desc_pool->pool_size,
+			tx_desc_pool->status);
 		if (!(tx_desc_pool->pool_size) ||
 		    IS_TX_DESC_POOL_STATUS_INACTIVE(tx_desc_pool) ||
 		    !(tx_desc_pool->desc_pages.cacheable_pages))
@@ -8959,6 +8968,7 @@ void dp_tx_desc_flush(struct dp_pdev *pdev, struct dp_vdev *vdev,
 						  false);
 
 			if (dp_is_tx_desc_flush_match(pdev, vdev, tx_desc)) {
+				nbuf_match_count++;
 				/*
 				 * Free TX desc if force free is
 				 * required, otherwise only reset vdev
@@ -8969,6 +8979,9 @@ void dp_tx_desc_flush(struct dp_pdev *pdev, struct dp_vdev *vdev,
 					dp_tx_comp_free_buf(soc, tx_desc,
 							    false);
 					dp_tx_desc_release(soc, tx_desc, i);
+					if (tx_desc->flags &
+					    DP_TX_DESC_FLAG_UNMAP_DONE)
+						unmap_nbuf_count++;
 				} else {
 					tx_desc->vdev_id = DP_INVALID_VDEV_ID;
 				}
@@ -8976,6 +8989,14 @@ void dp_tx_desc_flush(struct dp_pdev *pdev, struct dp_vdev *vdev,
 		}
 		if (!force_free)
 			qdf_spin_unlock_bh(&tx_desc_pool->flow_pool_lock);
+		dp_info("pool_id %d create_cnt=%d, avail_desc=%d, size=%d, status=%d, nbuf_match: %u, unmap: %u",
+			tx_desc_pool->flow_pool_id,
+			tx_desc_pool->pool_create_cnt,
+			tx_desc_pool->avail_desc, tx_desc_pool->pool_size,
+			tx_desc_pool->status, nbuf_match_count,
+			unmap_nbuf_count);
+		unmap_nbuf_count = 0;
+		nbuf_match_count = 0;
 	}
 }
 #else /* QCA_LL_TX_FLOW_CONTROL_V2! */
