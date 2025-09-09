@@ -387,6 +387,10 @@ static ssize_t ath_procfs_diag_read_ext(struct file *file, char __user *buf,
 				tgt_info->target_type);
 		}
 		break;
+	case QDF_BUS_TYPE_SDIO:
+		rv = pld_athdiag_read(scn->qdf_dev->dev, offset,
+				      memtype, count, read_buffer);
+		break;
 	default:
 		hif_err("Unrecognized bus type %d", scn->bus_type);
 		break;
@@ -466,6 +470,10 @@ static ssize_t ath_procfs_diag_write_ext(struct file *file,
 			hif_err("Unrecognized target type %d",
 				tgt_info->target_type);
 		}
+		break;
+	case QDF_BUS_TYPE_SDIO:
+		rv = pld_athdiag_write(scn->qdf_dev->dev, offset,
+				      memtype, count, write_buffer);
 		break;
 	default:
 		hif_err("Unrecognized bus type %d", scn->bus_type);
