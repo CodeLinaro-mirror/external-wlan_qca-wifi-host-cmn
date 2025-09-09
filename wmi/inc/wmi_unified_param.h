@@ -3308,6 +3308,8 @@ struct set_fwtest_params {
  * @WFA_FILS_DISCV_FRAMES: FD frames TX enable disable config
  * @WFA_IGNORE_H2E_RSNXE: configure driver/firmware to ignore H2E_RSNXE in case
  *                        of 6g connection
+ * @WFA_CONFIG_OFDMA: configure driver/firmware to force HE trigger to EHT STA
+ * @WFA_CONFIG_ML: configure driver/firmware with Multi-link params
  */
 enum wfa_test_cmds {
 	WFA_CONFIG_RXNE,
@@ -3316,6 +3318,8 @@ enum wfa_test_cmds {
 	WFA_CONFIG_SA_QUERY,
 	WFA_FILS_DISCV_FRAMES,
 	WFA_IGNORE_H2E_RSNXE,
+	WFA_CONFIG_OFDMA,
+	WFA_CONFIG_ML
 };
 
 /**
