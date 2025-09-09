@@ -3310,6 +3310,8 @@ struct set_fwtest_params {
  *                        of 6g connection
  * @WFA_CONFIG_OFDMA: configure driver/firmware to force HE trigger to EHT STA
  * @WFA_CONFIG_ML: configure driver/firmware with Multi-link params
+ * @WFA_IGNORE_TWT_BCAST_ID: configure driver to ignore TWT BCAST_ID in
+ * 			     TWT delete req
  */
 enum wfa_test_cmds {
 	WFA_CONFIG_RXNE,
@@ -3319,7 +3321,8 @@ enum wfa_test_cmds {
 	WFA_FILS_DISCV_FRAMES,
 	WFA_IGNORE_H2E_RSNXE,
 	WFA_CONFIG_OFDMA,
-	WFA_CONFIG_ML
+	WFA_CONFIG_ML,
+	WFA_IGNORE_TWT_BCAST_ID
 };
 
 /**
