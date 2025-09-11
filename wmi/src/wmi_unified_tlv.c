@@ -24737,6 +24737,8 @@ static void populate_tlv_events_id(WMI_EVT_ID *event_ids)
 #ifdef FEATURE_WLAN_TX_POWERBOOST
 	event_ids[wmi_pdev_power_boost_eventid] = WMI_PDEV_POWER_BOOST_EVENTID;
 #endif
+	wmi_service[wmi_service_sta_dar_stats_support] =
+				WMI_SERVICE_CTRL_PATH_STA_DAR_STATS_SUPPORT;
 }
 
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
