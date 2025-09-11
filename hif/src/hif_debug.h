@@ -51,4 +51,7 @@
 
 #define HIF_EXIT() QDF_TRACE_EXIT(QDF_MODULE_ID_HIF, "exit")
 
+#define HIF_HEX_DUMP(msg, buf, len)				\
+	print_hex_dump(KERN_ERR, msg, 2, 32, 4, buf, len, 1)
+
 #endif /* __HIF_DEBUG_H__ */

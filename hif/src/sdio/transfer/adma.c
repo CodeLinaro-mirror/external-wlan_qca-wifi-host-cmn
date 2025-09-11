@@ -827,7 +827,8 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		payload_len = HTC_GET_FIELD(buf, HTC_FRAME_HDR, PAYLOADLEN);
 		payload_len = qdf_le16_to_cpu(payload_len);
 		if (!payload_len) {
-			hif_err("Invalid Payload len %d bytes", payload_len);
+			hif_err("Invalid Payload len %d bytes, htc buf len:%d", payload_len, len);
+			HIF_HEX_DUMP("HEX_DUMP_HTC:", buf, len);
 			break;
 		}
 		if (payload_len > g_dbg_payload_len) {
