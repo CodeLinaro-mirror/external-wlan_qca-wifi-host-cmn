@@ -294,7 +294,7 @@ void hif_fixup_write_param(struct hif_sdio_dev *pdev, uint32_t req,
 	HIF_EXIT();
 }
 
-#define HIF_MAX_RX_Q_ALLOC 0 /* TODO */
+#define HIF_MAX_RX_Q_ALLOC 1000 /* TODO */
 #define HIF_RX_Q_ALLOC_THRESHOLD 100
 QDF_STATUS hif_disable_func(struct hif_sdio_dev *device,
 			    struct sdio_func *func,
@@ -448,7 +448,7 @@ void hif_sdio_rx_q_alloc(void *ctx)
 		}
 
 		/* TODO - Alloc nbuf based on payload_len in HTC Header */
-		rx_q_elem->nbuf = qdf_nbuf_alloc(NULL, HIF_SDIO_RX_BUFFER_SIZE,
+		rx_q_elem->nbuf = qdf_nbuf_frag_alloc(NULL, HIF_SDIO_RX_BUFFER_SIZE,
 						 0, 4, false);
 		if (!rx_q_elem->nbuf) {
 			hif_err("Failed to alloc nbuf for rx");
@@ -749,7 +749,7 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 	 * processed in the transfer done callback.
 	 */
 	/* TODO, use global buffer instead of runtime allocations */
-	nbuf = qdf_nbuf_alloc(NULL, len, 0, 4, false);
+	nbuf = qdf_nbuf_frag_alloc(NULL, len, 0, 4, false);
 
 	if (!nbuf) {
 		hif_err("Unable to alloc netbuf %u bytes", len);
