@@ -70,7 +70,7 @@ void debug_dump_bytes(uint8_t *buffer, uint16_t length, char *pDescription)
 
 static A_STATUS htc_process_trailer(HTC_TARGET *target,
 				    uint8_t *pBuffer,
-				    int Length, HTC_ENDPOINT_ID FromEndpoint);
+				    int Length, HTC_ENDPOINT_ID FromEndpoint, qdf_nbuf_t htc_buf);
 
 #ifdef WLAN_FEATURE_CE_RX_BUFFER_REUSE
 static void htc_rx_nbuf_free(qdf_nbuf_t nbuf)
@@ -392,7 +392,7 @@ QDF_STATUS htc_rx_completion_handler(void *Context, qdf_nbuf_t netbuf,
 						((uint8_t *) HtcHdr +
 							HTC_HDR_LENGTH +
 							payloadLen - temp),
-						temp, htc_ep_id);
+						temp, htc_ep_id, netbuf);
 				if (A_FAILED(temp_status)) {
 					status = QDF_STATUS_E_FAILURE;
 					break;
@@ -654,7 +654,7 @@ QDF_STATUS htc_wait_recv_ctrl_message(HTC_TARGET *target)
 
 static A_STATUS htc_process_trailer(HTC_TARGET *target,
 				    uint8_t *pBuffer,
-				    int Length, HTC_ENDPOINT_ID FromEndpoint)
+				    int Length, HTC_ENDPOINT_ID FromEndpoint, qdf_nbuf_t htc_buf)
 {
 	HTC_RECORD_HDR *pRecord;
 	uint8_t htc_rec_id;
@@ -690,6 +690,10 @@ static A_STATUS htc_process_trailer(HTC_TARGET *target,
 
 		if (htc_rec_len > Length) {
 			/* no room left in buffer for record */
+#ifdef DEBUG_CREDIT
+			pr_err("rec trail from EP %d\n", FromEndpoint);
+			HTC_HEX_DUMP("HTC_ERR_DUMP:", qdf_nbuf_data(htc_buf), qdf_nbuf_len(htc_buf));
+#endif
 			AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
 					("invalid record length: %d (id:%d) buffer has: %d bytes left\n",
 					 htc_rec_len, htc_rec_id, Length));
@@ -701,6 +705,9 @@ static A_STATUS htc_process_trailer(HTC_TARGET *target,
 
 		switch (htc_rec_id) {
 		case HTC_RECORD_CREDITS:
+#ifdef DEBUG_CREDIT
+		    pr_err("rec credit from EP %d\n", FromEndpoint);
+#endif
 			AR_DEBUG_ASSERT(htc_rec_len >=
 					sizeof(HTC_CREDIT_REPORT));
 			htc_process_credit_rpt(target,

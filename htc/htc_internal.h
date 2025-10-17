@@ -91,6 +91,9 @@ extern "C" {
 
 #define HTC_IS_EPPING_ENABLED(_x)           ((_x) == QDF_GLOBAL_EPPING_MODE)
 
+#define HTC_HEX_DUMP(msg, buf, len) \
+	print_hex_dump(KERN_ERR, msg, 2, 32, 4, buf, len, 1)
+
 enum htc_credit_exchange_type {
 	HTC_REQUEST_CREDIT,
 	HTC_PROCESS_CREDIT_REPORT,
