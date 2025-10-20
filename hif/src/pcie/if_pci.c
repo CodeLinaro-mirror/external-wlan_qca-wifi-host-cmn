@@ -1830,12 +1830,20 @@ static int hif_enable_pci_nopld(struct hif_pci_softc *sc,
 		goto err_dma;
 	}
 #else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+#else
 	ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+#endif
 	if (ret) {
 		hif_err("Cannot enable 32-bit pci DMA");
 		goto err_dma;
 	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+#else
 	ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+#endif
 	if (ret) {
 		hif_err("Cannot enable 32-bit consistent DMA!");
 		goto err_dma;

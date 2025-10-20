@@ -98,14 +98,6 @@ void qdf_event_list_init(void);
  */
 void qdf_event_list_destroy(void);
 
-/**
- * qdf_exit_thread() - exit thread execution
- * @status: QDF status
- *
- * Return: QDF status
- */
-QDF_STATUS qdf_exit_thread(QDF_STATUS status);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

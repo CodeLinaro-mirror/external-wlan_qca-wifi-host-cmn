@@ -43,6 +43,7 @@
 #include "if_sdio.h"
 #include "regtable.h"
 #include "transfer.h"
+#include "cds_api.h"
 
 /* by default setup a bounce buffer for the data packets,
  * if the underlying host controller driver
@@ -1887,7 +1888,7 @@ static int async_task(void *param)
 		}
 	}
 
-	complete_and_exit(&device->async_completion, 0);
+	kthread_complete_and_exit(&device->async_completion, 0);
 
 	return 0;
 }

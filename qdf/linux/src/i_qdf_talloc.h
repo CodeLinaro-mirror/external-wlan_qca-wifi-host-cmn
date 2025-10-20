@@ -25,6 +25,7 @@
 #ifndef __I_QDF_TALLOC_H
 #define __I_QDF_TALLOC_H
 
+#include <linux/version.h>
 #include "asm/page.h"
 #include "linux/irqflags.h"
 #include "linux/preempt.h"
@@ -40,7 +41,7 @@
 
 #define __free(ptr) kfree(ptr)
 
-#define __alloc_size(ptr) ksize(ptr)
+#define __qdf_alloc_size(ptr) ksize(ptr)
 
 #endif /* __I_QDF_TALLOC_H */
 

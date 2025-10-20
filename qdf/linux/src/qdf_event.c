@@ -377,14 +377,3 @@ void qdf_event_list_destroy(void)
 	qdf_spinlock_destroy(&qdf_wait_event_lock);
 }
 qdf_export_symbol(qdf_event_list_destroy);
-
-QDF_STATUS qdf_exit_thread(QDF_STATUS status)
-{
-	if (status == QDF_STATUS_SUCCESS)
-		do_exit(0);
-	else
-		do_exit(SIGKILL);
-
-	return QDF_STATUS_SUCCESS;
-}
-qdf_export_symbol(qdf_exit_thread);

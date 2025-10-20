@@ -34,6 +34,7 @@
 #include "hif_debug.h"
 #include "pld_common.h"
 #include "target_type.h"
+#include "wlan_cfg80211.h"
 
 #define PROCFS_NAME             "athdiagpfs"
 #ifdef MULTI_IF_NAME
@@ -72,7 +73,7 @@ static void *get_hif_hdl_from_file(struct file *file)
 {
 	struct hif_opaque_softc *scn;
 
-	scn = (struct hif_opaque_softc *)PDE_DATA(file_inode(file));
+	scn = (struct hif_opaque_softc *)pde_data(file_inode(file));
 	return (void *)scn;
 }
 

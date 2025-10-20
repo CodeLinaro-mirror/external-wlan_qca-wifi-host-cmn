@@ -463,7 +463,6 @@ int scheduler_thread(void *arg)
 	/* If we get here the scheduler thread must exit */
 	sched_debug("Scheduler thread exiting");
 	qdf_event_set(&sch_ctx->sch_shutdown);
-	qdf_exit_thread(QDF_STATUS_SUCCESS);
 
 	return 0;
 }

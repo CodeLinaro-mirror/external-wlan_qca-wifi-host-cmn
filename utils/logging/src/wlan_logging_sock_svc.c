@@ -689,7 +689,9 @@ static int send_filled_buffers_to_user(void)
 
 		wnl = (tAniNlHdr *) nlh;
 		wnl->radio = plog_msg->radio;
-		memcpy(&wnl->wmsg, plog_msg->logbuf,
+
+		/* Offset of data buffer from nlmsg_hdr + sizeof(int) radio */
+		memcpy(nlmsg_data(nlh) + sizeof(wnl->radio), plog_msg->logbuf,
 		       plog_msg->filled_length + sizeof(tAniHdr));
 
 		spin_lock_irqsave(&gwlan_logging.spin_lock, flags);
@@ -870,7 +872,7 @@ static int wlan_logging_thread(void *Arg)
 		}
 	}
 
-	complete_and_exit(&gwlan_logging.shutdown_comp, 0);
+	kthread_complete_and_exit(&gwlan_logging.shutdown_comp, 0);
 
 	return 0;
 }
