@@ -476,6 +476,8 @@ dp_peer_setup_wifi3(struct cdp_soc_t *soc_hdl, uint8_t vdev_id,
 
 uint32_t dp_get_tx_rings_grp_bitmap(struct cdp_soc_t *soc_hdl);
 
+uint32_t dp_get_rx_rings_grp_bitmap(struct cdp_soc_t *soc_hdl);
+
 /*
  * dp_set_ba_aging_timeout() - set ba aging timeout per AC
  * @txrx_soc: cdp soc handle
