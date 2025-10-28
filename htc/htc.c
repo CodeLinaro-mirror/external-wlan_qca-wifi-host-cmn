@@ -24,6 +24,8 @@
 #include <hif.h>
 #include <qdf_nbuf.h>           /* qdf_nbuf_t */
 #include <qdf_types.h>          /* qdf_print */
+#include <ani_global.h>
+#include "pld_sdio.h"
 
 #define MAX_HTC_RX_BUNDLE  2
 
@@ -249,6 +251,12 @@ static void htc_cleanup(HTC_TARGET *target)
 		endpoint = &target->endpoint[i];
 		qdf_spinlock_destroy(&endpoint->lookup_queue_lock);
 	}
+#ifdef DP_COLOGNE_HL
+	/* free the tx bundle buf here */
+	if (target->tx_bundle_buf) {
+		qdf_mem_free(target->tx_bundle_buf);
+	}
+#endif
 
 	/* free our instance */
 	qdf_mem_free(target);
@@ -904,6 +912,14 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 	HTC_SETUP_COMPLETE_EX_MSG *pSetupComp;
 	HTC_PACKET *pSendPacket;
 
+#ifdef DP_COLOGNE_HL
+        struct mac_context *mac_ctx;
+	mac_ctx = cds_get_context(QDF_MODULE_ID_PE);
+	if (!mac_ctx) {
+		qdf_print("mac context is NULL, set tx bundle num as default\n");
+	}
+#endif
+
 	AR_DEBUG_PRINTF(ATH_DEBUG_TRC, ("htc_start Enter\n"));
 
 	do {
@@ -949,7 +965,24 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 				HTC_SETUP_COMPLETE_FLAGS_ENABLE_BUNDLE_RECV;
 			hif_set_bundle_mode(target->hif_dev, true,
 				HTC_MAX_MSG_PER_BUNDLE_RX);
-			pSetupComp->MaxMsgsPerBundledRecv = HTC_MAX_MSG_PER_BUNDLE_RX;
+#ifdef DP_COLOGNE_HL
+		/** use the reserver Rsvd0 to notify the tx bundle number to target */
+		if (mac_ctx && mac_ctx->psoc) {
+			int tbnum = cfg_get(mac_ctx->psoc, CFG_DP_TX_BUNDLE_NUM);
+			pSetupComp->Rsvd0 = tbnum;
+			target->tx_bundle_num = tbnum;
+			target->tx_bundle_buf = qdf_mem_malloc(TX_BUNDLE_BUF_SIZE*tbnum);
+			if (target->tx_bundle_buf) {
+				register_tx_bundle_buf(target->tx_bundle_buf, target->tx_bundle_num);
+			}
+			pSetupComp->MaxMsgsPerBundledRecv = cfg_get(mac_ctx->psoc, CFG_DP_RX_BUNDLE_NUM);
+		} else {
+			pSetupComp->Rsvd0 = 1;
+			pSetupComp->MaxMsgsPerBundledRecv = 1;
+		}
+#else
+		pSetupComp->MaxMsgsPerBundledRecv = HTC_MAX_MSG_PER_BUNDLE_RX;
+#endif
 		}
 
 		SET_HTC_PACKET_INFO_TX(pSendPacket,
