@@ -447,6 +447,9 @@ wlan_cm_set_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc,
 uint8_t
 wlan_cm_get_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc,
 				  struct qdf_mac_addr *allowed_bss_link_addr);
+
+void
+wlan_cm_clear_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc);
 #else
 static inline void
 wlan_cm_set_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc,
@@ -460,6 +463,10 @@ wlan_cm_get_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc,
 {
 	return 0;
 }
+
+static inline void
+wlan_cm_clear_mlo_allowed_bss_links(struct wlan_objmgr_psoc *psoc)
+{}
 #endif
 
 /**
