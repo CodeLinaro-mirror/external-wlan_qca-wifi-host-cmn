@@ -646,6 +646,39 @@ bool wlan_mgmt_is_rmf_mgmt_action_frame(uint8_t action_category)
 	return false;
 }
 
+bool wlan_mgmt_is_robust_action_frame(qdf_nbuf_t buf)
+{
+	struct wlan_frame_hdr *wh;
+	struct action_frm_hdr *action_hdr;
+	uint8_t action_category;
+	uint8_t mgt_type, mgt_subtype;
+
+	if (!buf) {
+		mgmt_txrx_err("buf is NULL\n");
+		return false;
+	}
+	if (qdf_nbuf_get_data_len(buf) < (sizeof(struct wlan_frame_hdr) +
+		    sizeof(struct action_frm_hdr))) {
+		mgmt_txrx_err("Invalid frame size\n");
+		return false;
+	}
+
+	wh = (struct wlan_frame_hdr*)qdf_nbuf_data(buf);
+	mgt_type = (wh)->i_fc[0] & IEEE80211_FC0_TYPE_MASK;
+	mgt_subtype = (wh)->i_fc[0] & IEEE80211_FC0_SUBTYPE_MASK;
+	if (!(mgt_type == IEEE80211_FC0_TYPE_MGT &&
+		    mgt_subtype == MGMT_SUBTYPE_ACTION)) {
+		mgmt_txrx_err("Not an action frame\n");
+		return false;
+	}
+
+	action_hdr = (struct action_frm_hdr *)(qdf_nbuf_data(buf) +
+		sizeof(struct wlan_frame_hdr));
+	action_category = action_hdr->action_category;
+
+	return wlan_mgmt_is_rmf_mgmt_action_frame(action_category);
+}
+
 #ifdef WLAN_SUPPORT_FILS
 QDF_STATUS
 wlan_mgmt_txrx_fd_action_frame_tx(struct wlan_objmgr_vdev *vdev,

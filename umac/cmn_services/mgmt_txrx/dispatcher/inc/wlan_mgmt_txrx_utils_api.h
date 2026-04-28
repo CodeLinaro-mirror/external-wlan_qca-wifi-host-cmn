@@ -1247,6 +1247,14 @@ QDF_STATUS wlan_mgmt_txrx_mgmt_frame_tx(struct wlan_objmgr_peer *peer,
 bool wlan_mgmt_is_rmf_mgmt_action_frame(uint8_t action_category);
 
 /**
+ * wlan_mgmt_is_robust_action_frame() - API to check action frame is rmf
+ * @buf: buffer
+ *
+ * Return: true if action frame size valid and category is rmf else false
+ */
+bool wlan_mgmt_is_robust_action_frame(qdf_nbuf_t buf);
+
+/**
  * wlan_mgmt_txrx_beacon_frame_tx() - transmits mgmt. beacon
  * @peer: peer context
  * @buf: buffer to be transmitted
