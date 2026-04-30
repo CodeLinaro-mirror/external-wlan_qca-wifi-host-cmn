@@ -368,6 +368,7 @@ QDF_STATUS hif_enable_func(struct hif_softc *ol_sc, struct hif_sdio_dev *device,
 				hif_sdio_rx_q_alloc, (void *)device);
 		device->rx_q_alloc_work_scheduled = true;
 		qdf_sched_work(0, &device->rx_q_alloc_work);
+		device->is_disabled = false;
 	}
 #endif
 	return ret;
