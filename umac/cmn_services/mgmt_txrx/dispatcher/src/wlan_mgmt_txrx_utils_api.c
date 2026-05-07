@@ -668,7 +668,6 @@ bool wlan_mgmt_is_robust_action_frame(qdf_nbuf_t buf)
 	mgt_subtype = (wh)->i_fc[0] & IEEE80211_FC0_SUBTYPE_MASK;
 	if (!(mgt_type == IEEE80211_FC0_TYPE_MGT &&
 		    mgt_subtype == MGMT_SUBTYPE_ACTION)) {
-		mgmt_txrx_err("Not an action frame\n");
 		return false;
 	}
 
