@@ -26,7 +26,11 @@
 #include "hif_internal.h"
 
 /* This should align with the underlying transport layer */
+#ifdef DP_COLOGNE_HL
+#define HIF_DEFAULT_IO_BLOCK_SIZE    128
+#else
 #define HIF_DEFAULT_IO_BLOCK_SIZE    512
+#endif
 #define HIF_BLOCK_SIZE               HIF_DEFAULT_IO_BLOCK_SIZE
 #define HIF_DUMMY_SPACE_MASK         0x0FFFFFFF
 
