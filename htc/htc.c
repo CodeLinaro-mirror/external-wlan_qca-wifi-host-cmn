@@ -971,10 +971,6 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 			int tbnum = cfg_get(mac_ctx->psoc, CFG_DP_TX_BUNDLE_NUM);
 			pSetupComp->Rsvd0 = tbnum;
 			target->tx_bundle_num = tbnum;
-			target->tx_bundle_buf = qdf_mem_malloc(TX_BUNDLE_BUF_SIZE*tbnum);
-			if (target->tx_bundle_buf) {
-				register_tx_bundle_buf(target->tx_bundle_buf, target->tx_bundle_num);
-			}
 			pSetupComp->MaxMsgsPerBundledRecv = cfg_get(mac_ctx->psoc, CFG_DP_RX_BUNDLE_NUM);
 		} else {
 			pSetupComp->Rsvd0 = 1;
@@ -994,6 +990,14 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 		status = htc_send_pkt((HTC_HANDLE) target, pSendPacket);
 		if (QDF_IS_STATUS_ERROR(status))
 			break;
+
+#ifdef DP_COLOGNE_HL
+		target->tx_bundle_buf = qdf_mem_malloc(target->TargetCreditSize*target->tx_bundle_num);
+		if (target->tx_bundle_buf) {
+			register_tx_bundle_buf(target->tx_bundle_buf, target->tx_bundle_num,
+					       target->TargetCreditSize);
+		}
+#endif
 	} while (false);
 
 	AR_DEBUG_PRINTF(ATH_DEBUG_TRC, ("htc_start Exit\n"));
