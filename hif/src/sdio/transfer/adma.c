@@ -730,6 +730,7 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 	struct hif_sdio_dev *dev;
 	unsigned int chan;
 	qdf_nbuf_t nbuf;
+	QDF_STATUS status;
 
 	if (!ch_handle || !len) {
 		hif_err("Invalid args %u", len);
@@ -757,8 +758,19 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 		return;
 	}
 
-	hif_read_write(dev, (unsigned long)ch_handle, nbuf->data, len,
-		       HIF_RD_ASYNC_BLOCK_FIX, nbuf);
+	status = hif_read_write(dev, (unsigned long)ch_handle, nbuf->data, len,
+				HIF_RD_ASYNC_BLOCK_FIX, nbuf);
+
+	if (status == QDF_STATUS_E_PENDING) {
+		/*
+		 * it will return QDF_STATUS_E_PENDING in native HIF
+		 * implementation, which should be treated as successful
+		 * result here.
+		 */
+		status = QDF_STATUS_SUCCESS;
+	}
+	if (status != QDF_STATUS_SUCCESS)
+		qdf_nbuf_free(nbuf);
 }
 
 #define is_pad_block(buf)	(*((uint32_t *)buf) == 0xbabababa)
