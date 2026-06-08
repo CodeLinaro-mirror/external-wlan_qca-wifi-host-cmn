@@ -969,11 +969,9 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 		/** use the reserver Rsvd0 to notify the tx bundle number to target */
 		if (mac_ctx && mac_ctx->psoc) {
 			int tbnum = cfg_get(mac_ctx->psoc, CFG_DP_TX_BUNDLE_NUM);
-			pSetupComp->Rsvd0 = tbnum;
 			target->tx_bundle_num = tbnum;
 			pSetupComp->MaxMsgsPerBundledRecv = cfg_get(mac_ctx->psoc, CFG_DP_RX_BUNDLE_NUM);
 		} else {
-			pSetupComp->Rsvd0 = 1;
 			pSetupComp->MaxMsgsPerBundledRecv = 1;
 		}
 #else
