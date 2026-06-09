@@ -670,7 +670,9 @@ bool wlan_mgmt_is_robust_action_frame(qdf_nbuf_t buf)
 		    mgt_subtype == MGMT_SUBTYPE_ACTION)) {
 		return false;
 	}
-
+	if(wh->i_fc[1] & IEEE80211_FC1_WEP) {
+		return true;
+	}
 	action_hdr = (struct action_frm_hdr *)(qdf_nbuf_data(buf) +
 		sizeof(struct wlan_frame_hdr));
 	action_category = action_hdr->action_category;
