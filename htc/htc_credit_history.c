@@ -129,6 +129,14 @@ void htc_print_credit_history(HTC_HANDLE htc, uint32_t count,
 			      qdf_abstract_print *print, void *print_priv)
 {
 	uint32_t idx;
+	HTC_TARGET *target = GET_HTC_TARGET_FROM_HANDLE(htc);
+	HTC_ENDPOINT *pEndpoint;
+
+	if (target) {
+		pEndpoint = &target->endpoint[1];
+		if (pEndpoint->service_id == HTT_DATA_MSG_SVC)
+			print(print_priv, "HTT Credits %u\n", pEndpoint->TxCredits);
+	}
 
 	print(print_priv, "HTC Credit History (count %u)", count);
 	qdf_spin_lock_bh(&g_htc_credit_lock);
