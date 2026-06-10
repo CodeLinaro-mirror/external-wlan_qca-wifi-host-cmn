@@ -2396,6 +2396,22 @@ util_get_ml_bv_partner_link_info(struct wlan_objmgr_pdev *pdev,
 	if (!offset ||
 	    (offset + sizeof(struct wlan_ml_bv_linfo_perstaprof) >= ml_ie_len)) {
 		scm_debug_rl("incorrect offset value %d", offset);
+		/* Malformed Basic ML IE (no Per-STA Profile / invalid
+		 * link-info offset). Wipe ML state on this scan entry so
+		 * downstream candidate selection and connect paths treat
+		 * the BSS as non-MLO; otherwise an ML peer is still
+		 * created and the 4-way handshake stalls.
+		 *
+		 * Skip the wipe when RNR IE has already populated
+		 * partner_info[]: such APs (real ML APs that carry partner
+		 * link info only via RNR, not Per-STA Profile) must remain
+		 * MLO candidates so that all links can be associated.
+		 */
+		if (!scan_entry->ml_info.num_links) {
+			qdf_mem_zero(&scan_entry->ml_info.mld_mac_addr,
+				     sizeof(scan_entry->ml_info.mld_mac_addr));
+			scan_entry->ie_list.multi_link_bv = NULL;
+		}
 		return;
 	}
 
