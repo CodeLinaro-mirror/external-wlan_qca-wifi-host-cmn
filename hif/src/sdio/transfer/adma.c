@@ -649,11 +649,20 @@ hif_read_write(struct hif_sdio_dev *dev,
 
 		if ((status == QDF_STATUS_SUCCESS) && (dir == SDIO_AL_RX)) {
 			nbuf = (qdf_nbuf_t)context;
-			payload_len = HTC_GET_FIELD(bus_req->buffer,
+			payload_len = HTC_GET_FIELD(buffer,
 						    HTC_FRAME_HDR,
 						    PAYLOADLEN);
 			qdf_nbuf_set_pktlen(nbuf, payload_len + HTC_HDR_LENGTH);
+			/**
+			 * During device teardown (hif_stop → hif_dev_destroy), the HTC context
+			 * (dev->htc_context) is explicitly set to NULL,
+			 * However, there may still be pending SDIO completion callbacks running
+			 */
 			device = (struct hif_sdio_device *)dev->htc_context;
+			if (!device) {
+				hif_err("%s: htc_context is NULL", __func__);
+				return QDF_STATUS_E_FAILURE;
+			}
 			rx_comp = device->hif_callbacks.rxCompletionHandler;
 			rx_comp(device->hif_callbacks.Context, nbuf, 0);
 		}
@@ -812,12 +821,18 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 	dev = (struct hif_sdio_dev *)ch_handle->priv;
 	if (result->xfer_status) {
 		hif_err("ASYNC Rx failed %d", result->xfer_status);
-		qdf_nbuf_free((qdf_nbuf_t)bus_req->context);
-		hif_free_bus_request(dev, bus_req);
-		return;
+		goto func_exit;
 	}
-
+	/**
+	 * During device teardown (hif_stop → hif_dev_destroy), the HTC context
+	 * (dev->htc_context) is explicitly set to NULL,
+	 * However, there may still be pending SDIO completion callbacks running
+	 */
 	device = (struct hif_sdio_device *)dev->htc_context;
+	if (!device) {
+		hif_err("%s: device is NULL, skip callback", __func__);
+		goto func_exit;
+	}
 	rx_completion = device->hif_callbacks.rxCompletionHandler;
 
 	buf = (unsigned char *)result->buf_addr;
@@ -875,7 +890,7 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		len -= payload_len + HTC_HDR_LENGTH;
 		buf += payload_len + HTC_HDR_LENGTH;
 	}
-
+func_exit:
 	qdf_nbuf_free((qdf_nbuf_t)bus_req->context);
 	hif_free_bus_request(dev, bus_req);
 }
