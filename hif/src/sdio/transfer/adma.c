@@ -890,6 +890,13 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		rx_completion(device->hif_callbacks.Context, nbuf,
 			      0); /* don't care, not used */
 
+		if (len < (payload_len + HTC_HDR_LENGTH)) {
+			hif_err("Payload + HTC_HDR > req buf len");
+			HIF_HEX_DUMP("ERR_HTC_BUFF:", result->buf_addr, result->xfer_len);
+			cnss_force_fw_assert(NULL);
+			break;
+		}
+
 		len -= payload_len + HTC_HDR_LENGTH;
 		buf += payload_len + HTC_HDR_LENGTH;
 	}
