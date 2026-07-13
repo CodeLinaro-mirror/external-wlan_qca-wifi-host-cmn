@@ -2095,7 +2095,7 @@ static void hif_pci_deconfigure_grp_irq(struct hif_softc *scn)
 
 	for (i = 0; i < hif_state->hif_num_extgroup; i++) {
 		hif_ext_group = hif_state->hif_ext_group[i];
-		if (hif_ext_group->irq_requested) {
+		if (hif_ext_group && hif_ext_group->irq_requested) {
 			hif_ext_group->irq_requested = false;
 			for (j = 0; j < hif_ext_group->numirq; j++) {
 				irq = hif_ext_group->os_irq[j];

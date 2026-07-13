@@ -20,7 +20,10 @@
 #include <hif_exec.h>
 #include <ce_main.h>
 #include "qdf_module.h"
+#include <linux/interrupt.h>
 #include "qdf_net_if.h"
+#include "qdf_irq.h"
+#include "qdf_dev.h"
 /* mapping NAPI budget 0 to internal budget 0
  * NAPI budget 1 to internal budget [1,scaler -1]
  * NAPI budget 2 to internal budget [scaler, 2 * scaler - 1], etc
@@ -1130,6 +1133,31 @@ void hif_exec_destroy(struct hif_exec_context *ctx)
 	qdf_mem_free(ctx);
 }
 
+#ifdef CONFIG_PREEMPT_RT
+static void hif_kill_exec_group(struct hif_softc *scn,
+	struct hif_exec_context *hif_ext_group)
+{
+	int j;
+	hif_ext_group->irq_requested = false;
+	hif_ext_group->sched_ops->kill(hif_ext_group);
+	for (j = 0; j < hif_ext_group->numirq; j++) {
+		if (scn->irq_unlazy_disable)
+			qdf_dev_clear_irq_status_flags(
+				hif_ext_group->os_irq[j],
+				QDF_IRQ_DISABLE_UNLAZY);
+		free_irq(hif_ext_group->os_irq[j],
+				hif_ext_group);
+	}
+	hif_ext_group->numirq = 0;
+}
+#else
+static void hif_kill_exec_group(struct hif_softc *scn,
+	struct hif_exec_context *hif_ext_group)
+{
+	hif_ext_group->sched_ops->kill(hif_ext_group);
+}
+#endif
+
 /**
  * hif_deregister_exec_group() - API to free the exec contexts
  * @hif_ctx: HIF context
@@ -1160,7 +1188,7 @@ void hif_deregister_exec_group(struct hif_opaque_softc *hif_ctx,
 			  hif_ext_group->context_name);
 
 		if (strcmp(hif_ext_group->context_name, context_name) == 0) {
-			hif_ext_group->sched_ops->kill(hif_ext_group);
+			hif_kill_exec_group(scn, hif_ext_group);
 			hif_state->hif_ext_group[i] = NULL;
 			hif_exec_destroy(hif_ext_group);
 			hif_state->hif_num_extgroup--;
