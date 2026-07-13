@@ -1037,6 +1037,24 @@ void htc_flush_surprise_remove(HTC_HANDLE HTCHandle)
 	AR_DEBUG_PRINTF(ATH_DEBUG_TRC, ("-htc_flush_surprise_remove\n"));
 }
 
+void htc_flush_htt_tx(HTC_HANDLE htc_handle)
+{
+
+	HTC_TARGET *target = GET_HTC_TARGET_FROM_HANDLE(htc_handle);
+	int i;
+	HTC_ENDPOINT *pEndpoint;
+
+	if (!target)
+		return;
+
+	for (i = 0; i < ENDPOINT_MAX; i++) {
+		pEndpoint = &target->endpoint[i];
+		if (pEndpoint->service_id == HTT_DATA_MSG_SVC)
+			htc_flush_endpoint_tx(target, pEndpoint, HTC_TX_PACKET_TAG_ALL);
+	}
+
+	return;
+}
 /* stop HTC communications, i.e. stop interrupt reception, and flush all queued
  * buffers
  */
