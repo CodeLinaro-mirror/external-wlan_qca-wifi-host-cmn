@@ -7496,6 +7496,12 @@ enum qca_vendor_element_id {
  * This attribute is used to provide TSF sync interval and only applicable when
  * TSF command is %QCA_TSF_SYNC_START. If this attribute is not provided, the
  * driver will use the default value. Time unit is in milliseconds.
+ * @QCA_WLAN_VENDOR_ATTR_TSF_PAD: Attribute used for padding for 64-bit
+ * alignment.
+ * @QCA_WLAN_VENDOR_ATTR_TSF_FLAGS: Optional (u32) for QCA_TSF_CAPTURE.
+ * Bitmap of &enum wmi_tsf_tstamp_report_flags to configure GPIO toggle
+ * behavior on the target. If absent, no flags are sent and the target keeps
+ * its previous configuration.
  */
 enum qca_vendor_attr_tsf_cmd {
 	QCA_WLAN_VENDOR_ATTR_TSF_INVALID = 0,
@@ -7503,6 +7509,8 @@ enum qca_vendor_attr_tsf_cmd {
 	QCA_WLAN_VENDOR_ATTR_TSF_TIMER_VALUE,
 	QCA_WLAN_VENDOR_ATTR_TSF_SOC_TIMER_VALUE,
 	QCA_WLAN_VENDOR_ATTR_TSF_SYNC_INTERVAL,
+	QCA_WLAN_VENDOR_ATTR_TSF_PAD,
+	QCA_WLAN_VENDOR_ATTR_TSF_FLAGS,
 	QCA_WLAN_VENDOR_ATTR_TSF_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_TSF_MAX =
 	QCA_WLAN_VENDOR_ATTR_TSF_AFTER_LAST - 1
@@ -7545,6 +7553,19 @@ enum qca_tsf_cmd {
 	QCA_TSF_SYNC_START,
 	QCA_TSF_SYNC_STOP,
 	QCA_TSF_SYNC_GET_CSA_TIMESTAMP,
+};
+
+/**
+ * qca_tsf_flags - Represents the bitmap of flags possible for the
+ * %QCA_WLAN_VENDOR_ATTR_TSF_FLAGS attribute.
+ *
+ * @QCA_TSF_GPIO_TOGGLE_HIGH: Configure the target TSF GPIO output level to high.
+ *
+ * @QCA_TSF_GPIO_TOGGLE_LOW: Configure the target TSF GPIO output level to low.
+ */
+enum qca_tsf_flags {
+	QCA_TSF_GPIO_TOGGLE_HIGH = BIT(0),
+	QCA_TSF_GPIO_TOGGLE_LOW = BIT(1),
 };
 
 /**
