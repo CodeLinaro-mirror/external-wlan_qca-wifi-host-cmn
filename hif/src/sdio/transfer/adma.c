@@ -681,6 +681,8 @@ hif_read_write(struct hif_sdio_dev *dev,
 			hif_err("ASYNC REQ fail ret: %d for len: %d ch: %d",
 				ret, length, ch->channel_id);
 			hif_free_bus_request(dev, bus_req);
+			if (dir == SDIO_AL_RX)
+				QDF_BUG(false);
 		} else {
 			status = QDF_STATUS_E_PENDING;
 		}
@@ -870,6 +872,7 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		nbuf = hif_sdio_get_nbuf(dev, payload_len + HTC_HEADER_LEN);
 		if (!nbuf) {
 			hif_err("Failed to alloc rx buffer");
+			QDF_BUG(false);
 			break;
 		}
 
@@ -879,6 +882,7 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 				(payload_len + 8),
 				qdf_nbuf_tailroom(nbuf));
 			qdf_nbuf_free(nbuf);
+			QDF_BUG(false);
 			break;
 		}
 
