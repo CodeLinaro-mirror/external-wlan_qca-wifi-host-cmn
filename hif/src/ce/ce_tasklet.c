@@ -612,6 +612,30 @@ static inline bool hif_tasklet_schedule(struct hif_opaque_softc *hif_ctx,
 	return true;
 }
 
+
+#ifdef CONFIG_PREEMPT_RT
+static inline bool
+ce_tasklet_rt_protect(int ce_id,
+			  struct ce_tasklet_entry *tasklet_entry)
+{
+	if (tasklet_entry->inited &&
+		(test_bit(TASKLET_STATE_SCHED,
+			  &tasklet_entry->intr_tq.state) ||
+		 test_bit(TASKLET_STATE_RUN,
+			  &tasklet_entry->intr_tq.state)))
+		return true;
+
+	return false;
+}
+#else
+static inline bool
+ce_tasklet_rt_protect(int ce_id,
+			  struct ce_tasklet_entry *tasklet_entry)
+{
+	return false;
+}
+#endif
+
 /**
  * ce_dispatch_interrupt() - dispatch an interrupt to a processing context
  * @ce_id: ce_id
@@ -637,6 +661,9 @@ irqreturn_t ce_dispatch_interrupt(int ce_id,
 		return IRQ_NONE;
 	}
 
+	if (ce_tasklet_rt_protect(ce_id, tasklet_entry))
+		return IRQ_NONE;
+        
 	hif_irq_disable(scn, ce_id);
 
 	if (!TARGET_REGISTER_ACCESS_ALLOWED(scn))
