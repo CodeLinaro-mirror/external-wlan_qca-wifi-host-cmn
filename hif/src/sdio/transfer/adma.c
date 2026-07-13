@@ -410,6 +410,9 @@ static qdf_nbuf_t hif_sdio_get_nbuf(struct hif_sdio_dev *dev, uint16_t buf_len)
 
 	qdf_mem_free(elem);
 
+	if (!nbuf)
+		nbuf = qdf_nbuf_alloc(NULL, buf_len, 0, 4, false);
+
 	return nbuf;
 }
 #else
