@@ -436,7 +436,7 @@ QDF_STATUS htc_rx_completion_handler(void *Context, qdf_nbuf_t netbuf,
 						sizeof(HTC_FRAME_HDR),
 						"BAD HTC Header");
 					print_hex_dump(KERN_ERR, "HTC msg buffer:", DUMP_PREFIX_NONE, 16, 1, netdata, netlen, true);
-					QDF_BUG(false);
+					cnss_force_fw_assert(NULL);
 					break;
 				}
 
