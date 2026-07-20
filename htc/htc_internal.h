@@ -274,8 +274,6 @@ typedef struct _HTC_TARGET {
 	/* Non flow ctrl enabled endpoints nbuf map unmap count */
 	uint32_t nbuf_nfc_map_count;
 	uint32_t nbuf_nfc_unmap_count;
-	void * tx_bundle_buf;
-	uint32_t tx_bundle_num;
 } HTC_TARGET;
 
 

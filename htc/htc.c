@@ -251,12 +251,6 @@ static void htc_cleanup(HTC_TARGET *target)
 		endpoint = &target->endpoint[i];
 		qdf_spinlock_destroy(&endpoint->lookup_queue_lock);
 	}
-#ifdef DP_COLOGNE_HL
-	/* free the tx bundle buf here */
-	if (target->tx_bundle_buf) {
-		qdf_mem_free(target->tx_bundle_buf);
-	}
-#endif
 
 	/* free our instance */
 	qdf_mem_free(target);
@@ -973,8 +967,6 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 #ifdef DP_COLOGNE_HL
 		/** use the reserver Rsvd0 to notify the tx bundle number to target */
 		if (mac_ctx && mac_ctx->psoc) {
-			int tbnum = cfg_get(mac_ctx->psoc, CFG_DP_TX_BUNDLE_NUM);
-			target->tx_bundle_num = tbnum;
 			pSetupComp->MaxMsgsPerBundledRecv = cfg_get(mac_ctx->psoc, CFG_DP_RX_BUNDLE_NUM);
 		} else {
 			pSetupComp->MaxMsgsPerBundledRecv = 1;
@@ -995,11 +987,7 @@ QDF_STATUS htc_start(HTC_HANDLE HTCHandle)
 			break;
 
 #ifdef DP_COLOGNE_HL
-		target->tx_bundle_buf = qdf_mem_malloc(target->TargetCreditSize*target->tx_bundle_num);
-		if (target->tx_bundle_buf) {
-			register_tx_bundle_buf(target->tx_bundle_buf, target->tx_bundle_num,
-					       target->TargetCreditSize);
-		}
+		register_tx_bundle_size(target->TargetCreditSize);
 #endif
 	} while (false);
 
