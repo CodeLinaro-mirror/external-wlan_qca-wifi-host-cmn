@@ -806,6 +806,11 @@ QDF_STATUS htc_wait_target(HTC_HANDLE HTCHandle)
 		target->MaxMsgsPerHTCBundle =
 			(uint8_t) pReadyMsg->MaxMsgsPerHTCBundle;
 		UPDATE_ALT_CREDIT(target, pReadyMsg->AltDataCreditSize);
+
+#ifdef DP_COLOGNE_HL
+		if (target->HTCInitInfo.cfg_htc_bundle_cnt)
+			target->MaxMsgsPerHTCBundle = target->HTCInitInfo.cfg_htc_bundle_cnt;
+#endif
 		/* for old fw this value is set to 0. But the minimum value
 		 * should be 1, i.e., no bundling
 		 */

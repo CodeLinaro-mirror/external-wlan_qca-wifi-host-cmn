@@ -644,15 +644,23 @@ static void htc_issue_packets_bundle(HTC_TARGET *target,
 				SM(pPacket->ActualLength,
 				HTC_FRAME_HDR_PAYLOADLEN) |
 				SM(pPacket->PktInfo.AsTx.SendFlags |
+#ifdef DP_COLOGNE_HL
+				0,
+#else
 				HTC_FLAGS_SEND_BUNDLE,
+#endif
 				HTC_FRAME_HDR_FLAGS) |
 				SM(pPacket->Endpoint,
 				HTC_FRAME_HDR_ENDPOINTID));
 			HTC_WRITE32((uint32_t *) pHtcHdr + 1,
 				SM(pPacket->PktInfo.AsTx.SeqNo,
+#ifdef DP_COLOGNE_HL
+				HTC_FRAME_HDR_CONTROLBYTES1));
+#else
 				HTC_FRAME_HDR_CONTROLBYTES1) | SM(creditPad,
 				HTC_FRAME_HDR_RESERVED));
 			pHtcHdr->reserved = creditPad;
+#endif
 		}
 		frag_count = qdf_nbuf_get_num_frags(netbuf);
 		nbytes = pPacket->ActualLength + HTC_HDR_LENGTH;
@@ -1300,7 +1308,12 @@ static void get_htc_send_packets_credit_based(HTC_TARGET *target,
 			if (pEndpoint->TxCredits <=
 			    pEndpoint->TxCreditsPerMaxMsg) {
 				/* tell the target we need credits ASAP! */
+#ifdef DP_COLOGNE_HL
+				if (pEndpoint->service_id != HTT_DATA_MSG_SVC)
+					sendFlags |= HTC_FLAGS_NEED_CREDIT_UPDATE;
+#else
 				sendFlags |= HTC_FLAGS_NEED_CREDIT_UPDATE;
+#endif
 				if (pEndpoint->service_id == WMI_CONTROL_SVC) {
 					htc_credit_record(HTC_REQUEST_CREDIT,
 							  pEndpoint->TxCredits,
