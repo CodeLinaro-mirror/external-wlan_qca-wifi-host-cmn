@@ -788,6 +788,7 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 }
 
 #define is_pad_block(buf)	(*((uint32_t *)buf) == 0xbabababa)
+#define QCN_SDIO_CH_1	1
 uint16_t g_dbg_payload_len;
 
 /**
@@ -893,6 +894,10 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 
 		rx_completion(device->hif_callbacks.Context, nbuf,
 			      0); /* don't care, not used */
+
+		/* No bundle in the WMI message */
+		if (ch_handle->channel_id == QCN_SDIO_CH_1)
+			break;
 
 		if (len < (payload_len + HTC_HDR_LENGTH)) {
 			hif_err("Payload + HTC_HDR > req buf len");
