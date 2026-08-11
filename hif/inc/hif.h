@@ -789,6 +789,9 @@ static inline void
 hif_display_ctrl_traffic_pipes_state(struct hif_opaque_softc *hif_ctx)
 {
 }
+
+/* Headroom required in TX skb for hif_sendContext prepended by hif_dev_send_buffer() */
+#define HIF_SDIO_TX_HEADROOM 64
 #endif
 
 #if (defined(HIF_CONFIG_SLUB_DEBUG_ON) || defined(HIF_CE_DEBUG_DATA_BUF)) && \

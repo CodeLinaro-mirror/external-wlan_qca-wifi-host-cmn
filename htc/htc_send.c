@@ -225,7 +225,8 @@ HTC_PACKET *allocate_htc_bundle_packet(HTC_TARGET *target)
 		UNLOCK_HTC_TX(target);
 		netbuf = qdf_nbuf_alloc(NULL,
 					target->MaxMsgsPerHTCBundle *
-					target->TargetCreditSize, 0, 4, false);
+					target->TargetCreditSize,
+					HIF_SDIO_TX_HEADROOM, 4, false);
 		AR_DEBUG_ASSERT(netbuf);
 		if (!netbuf)
 			return NULL;
