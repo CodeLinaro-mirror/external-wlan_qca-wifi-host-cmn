@@ -103,6 +103,10 @@ static QDF_STATUS extract_dcs_im_tgt_stats_tlv(
 	wlan_stat->mib_stats.reg_cck_phyerr_cnt = ev->reg_cck_phyerr_cnt;
 	wlan_stat->chan_nf = ev->chan_nf;
 	wlan_stat->my_bss_rx_cycle_count = ev->my_bss_rx_cycle_count;
+	wlan_stat->tx_retransmission_rate = ev->tx_retransmission_rate;
+	wlan_stat->tx_packet_loss_rate = ev->tx_packet_loss_rate;
+	wlan_stat->rx_error_rate = ev->rx_error_rate;
+	wlan_stat->rx_duplicate_reception_rate = ev->rx_duplicate_reception_rate;
 
 	return QDF_STATUS_SUCCESS;
 }

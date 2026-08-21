@@ -88,6 +88,10 @@ struct wlan_host_dcs_mib_stats {
  * @my_bss_rx_cycle_count: BSS rx cycle count
  * @reg_rxclr_ext40_cnt: extension channel 40Mhz rxclear count
  * @reg_rxclr_ext80_cnt: extension channel 80Mhz rxclear count
+ * @tx_retransmission_rate: TX retransmission rate reported by target
+ * @tx_packet_loss_rate: TX packet loss rate reported by target
+ * @rx_error_rate: RX error rate reported by target
+ * @rx_duplicate_reception_rate: RX duplicate reception rate reported by target
  */
 struct wlan_host_dcs_im_tgt_stats {
 	uint32_t reg_tsf32;
@@ -100,6 +104,10 @@ struct wlan_host_dcs_im_tgt_stats {
 	uint32_t my_bss_rx_cycle_count;
 	uint32_t reg_rxclr_ext40_cnt;
 	uint32_t reg_rxclr_ext80_cnt;
+	uint32_t tx_retransmission_rate;
+	uint32_t tx_packet_loss_rate;
+	uint32_t rx_error_rate;
+	uint32_t rx_duplicate_reception_rate;
 };
 
 /**
