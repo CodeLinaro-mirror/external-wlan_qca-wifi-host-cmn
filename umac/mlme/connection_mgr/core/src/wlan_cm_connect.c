@@ -550,6 +550,7 @@ bool cm_is_ml_connection(struct wlan_objmgr_vdev *vdev,
 	    IS_WLAN_PHYMODE_EHT(req->cur_candidate->entry->phy_mode) &&
 	    req->cur_candidate->entry->ie_list.ehtop &&
 	    req->cur_candidate->entry->ie_list.multi_link_bv &&
+	    req->req.ml_parnter_info.num_partner_links &&
 	    wlan_cm_is_eht_allowed_for_current_security(wlan_vdev_get_psoc(vdev),
 							req->cur_candidate->entry,
 							true))
