@@ -271,6 +271,23 @@ QDF_STATUS ucfg_dcs_get_ch_util(struct wlan_objmgr_psoc *psoc, uint8_t mac_id,
 				struct wlan_host_dcs_ch_util_stats *dcs_stats);
 
 /**
+ * ucfg_dcs_get_im_stats() - API to get the latest DCS IM target stats snapshot
+ * @psoc: pointer to psoc object
+ * @pdev_id: pdev id
+ * @stats: caller-supplied buffer to receive a snapshot copy of the
+ *         wlan_host_dcs_im_tgt_stats cached at
+ *         dcs_pdev_priv->dcs_im_stats.prev_dcs_im_stats
+ *
+ * The snapshot is copied under pdev lock so the caller always sees a
+ * self-consistent view even while WMI events are updating the cache.
+ *
+ * Return: QDF_STATUS_SUCCESS on success, error code on invalid input or
+ *         when DCS is not attached on this pdev.
+ */
+QDF_STATUS ucfg_dcs_get_im_stats(struct wlan_objmgr_psoc *psoc, uint8_t pdev_id,
+				 struct wlan_host_dcs_im_tgt_stats *stats);
+
+/**
  * ucfg_dcs_trigger_dcs() - ucfg wrapper to trigger DCS
  * @psoc: psoc Pointer
  * @pdev_id: pdev id
@@ -375,6 +392,13 @@ ucfg_dcs_get_ch_util(struct wlan_objmgr_psoc *psoc, uint8_t mac_id,
 		     struct wlan_host_dcs_ch_util_stats *dcs_stats)
 {
 	return QDF_STATUS_SUCCESS;
+}
+
+static inline QDF_STATUS
+ucfg_dcs_get_im_stats(struct wlan_objmgr_psoc *psoc, uint8_t pdev_id,
+		      struct wlan_host_dcs_im_tgt_stats *stats)
+{
+	return QDF_STATUS_E_NOSUPPORT;
 }
 
 static inline QDF_STATUS

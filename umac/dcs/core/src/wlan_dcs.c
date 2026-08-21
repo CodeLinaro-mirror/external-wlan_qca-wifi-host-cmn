@@ -813,7 +813,9 @@ wlan_dcs_wlan_interference_process(struct wlan_objmgr_psoc *psoc,
 
 copy_stats:
 	 /* Copy the stats for next cycle */
+	wlan_dcs_pdev_obj_lock(dcs_pdev_priv);
 	wlan_dcs_im_copy_stats(prev_stats, curr_stats);
+	wlan_dcs_pdev_obj_unlock(dcs_pdev_priv);
 end:
 	return start_dcs_cbk_handler;
 }

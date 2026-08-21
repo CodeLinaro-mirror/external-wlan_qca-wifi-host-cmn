@@ -243,6 +243,29 @@ QDF_STATUS ucfg_dcs_get_ch_util(struct wlan_objmgr_psoc *psoc, uint8_t mac_id,
 	return QDF_STATUS_SUCCESS;
 }
 
+QDF_STATUS ucfg_dcs_get_im_stats(struct wlan_objmgr_psoc *psoc, uint8_t pdev_id,
+				 struct wlan_host_dcs_im_tgt_stats *stats)
+{
+	struct dcs_pdev_priv_obj *dcs_pdev_priv;
+
+	if (!psoc || !stats)
+		return QDF_STATUS_E_INVAL;
+
+	dcs_pdev_priv = wlan_dcs_get_pdev_private_obj(psoc, pdev_id);
+	if (!dcs_pdev_priv) {
+		dcs_err("dcs pdev private object is null");
+		return QDF_STATUS_E_NULL_VALUE;
+	}
+
+	wlan_dcs_pdev_obj_lock(dcs_pdev_priv);
+	qdf_mem_copy(stats,
+		     &dcs_pdev_priv->dcs_im_stats.prev_dcs_im_stats,
+		     sizeof(*stats));
+	wlan_dcs_pdev_obj_unlock(dcs_pdev_priv);
+
+	return QDF_STATUS_SUCCESS;
+}
+
 #ifdef DCS_INTERFERENCE_DETECTION
 void
 ucfg_dcs_trigger_dcs(struct wlan_objmgr_psoc *psoc, uint8_t pdev_id,
