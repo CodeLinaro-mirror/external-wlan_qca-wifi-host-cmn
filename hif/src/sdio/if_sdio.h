@@ -29,6 +29,7 @@
 #include "a_osapi.h"
 #include "pld_sdio.h"
 #include "hif_internal.h"
+#include "hif_runtime_pm.h"
 
 
 #define AR6320_HEADERS_DEF

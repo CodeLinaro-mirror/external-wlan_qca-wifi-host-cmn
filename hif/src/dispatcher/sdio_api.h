@@ -33,3 +33,6 @@ void hif_sdio_set_mailbox_swap(struct hif_softc *hif_sc);
 void hif_sdio_claim_device(struct hif_softc *hif_sc);
 void hif_sdio_mask_interrupt_call(struct hif_softc *scn);
 bool hif_sdio_needs_bmi(struct hif_softc *scn);
+void hif_sdio_enable_power_management(struct hif_softc *hif_ctx,
+				 bool is_packet_log_enabled);
+void hif_sdio_disable_power_management(struct hif_softc *hif_ctx);

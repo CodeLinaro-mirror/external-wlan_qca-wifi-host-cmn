@@ -116,6 +116,7 @@ void hif_enable_power_gating(void *hif_ctx)
  */
 void hif_sdio_close(struct hif_softc *hif_sc)
 {
+	hif_rtpm_close(hif_sc);
 }
 
 /**
@@ -130,6 +131,7 @@ QDF_STATUS hif_sdio_open(struct hif_softc *hif_sc,
 {
 	hif_sc->bus_type = bus_type;
 
+	hif_rtpm_open(hif_sc);
 	return QDF_STATUS_SUCCESS;
 }
 
@@ -305,4 +307,13 @@ void hif_wlan_disable(struct hif_softc *scn)
 bool hif_sdio_needs_bmi(struct hif_softc *scn)
 {
 	return true;
+}
+void hif_sdio_enable_power_management(struct hif_softc *hif_ctx,
+				 bool is_packet_log_enabled)
+{
+	hif_rtpm_start(hif_ctx);
+}
+void hif_sdio_disable_power_management(struct hif_softc *hif_ctx)
+{
+	hif_rtpm_stop(hif_ctx);
 }

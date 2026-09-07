@@ -278,10 +278,19 @@ static void hif_rtpm_debugfs_remove(void)
  *
  * This function will init all the Runtime PM config.
  *
+ * On some buses (e.g. SDIO) the generic bus core never enables runtime PM
+ * for @dev (no MMC_CAP_POWER_OFF_CARD), so nobody else owns it; enable it
+ * here in that case. On buses where the bus core (or some other layer)
+ * already enabled it (e.g. PCIe/AHB), leave that alone.
+ *
  * Return: void
  */
 static void hif_rtpm_init(struct device *dev, int delay)
 {
+#ifdef CONFIG_SDIO
+	pm_runtime_set_active(dev);
+	pm_runtime_enable(dev);
+#endif
 	pm_runtime_set_autosuspend_delay(dev, delay);
 	pm_runtime_use_autosuspend(dev);
 	pm_runtime_allow(dev);
@@ -303,7 +312,13 @@ static void hif_rtpm_exit(struct device *dev)
 	pm_runtime_get_noresume(dev);
 	pm_runtime_set_active(dev);
 	pm_runtime_forbid(dev);
+
+#ifdef CONFIG_SDIO
+	pm_runtime_dont_use_autosuspend(dev);
+	pm_runtime_disable(dev);
+#endif
 }
+
 
 static void hif_rtpm_alloc_last_busy_hist(void)
 {
@@ -637,8 +652,8 @@ static bool hif_rtpm_enabled(void)
 	if (qdf_unlikely(!gp_hif_rtpm_ctx))
 		return false;
 
-	if (gp_hif_rtpm_ctx->enable_rpm)
-		return true;
+	if (!gp_hif_rtpm_ctx->enable_rpm)
+		return false;
 
 	return __hif_rtpm_enabled(gp_hif_rtpm_ctx->dev);
 }

@@ -2676,6 +2676,7 @@ QDF_STATUS htc_tx_completion_handler(void *Context,
 	HTC_TARGET *target = (HTC_TARGET *) Context;
 	HTC_ENDPOINT *pEndpoint;
 	HTC_PACKET *pPacket;
+	unsigned int rtpm_code = 0;
 #ifdef USB_HIF_SINGLE_PIPE_DATA_SCHED
 	HTC_ENDPOINT_ID eid[DATA_EP_SIZE] = { ENDPOINT_5, ENDPOINT_4,
 		ENDPOINT_2, ENDPOINT_3 };
@@ -2700,8 +2701,10 @@ QDF_STATUS htc_tx_completion_handler(void *Context,
 		if (pPacket->PktInfo.AsTx.Tag != HTC_TX_PACKET_TAG_AUTO_PM &&
 		    pPacket->PktInfo.AsTx.Tag != HTC_TX_PACKET_TAG_RUNTIME_PUT &&
 		    pPacket->PktInfo.AsTx.Tag != HTC_TX_PACKET_TAG_RTPM_PUT_RC) {
-			hif_rtpm_put(HIF_RTPM_PUT_ASYNC, HIF_RTPM_ID_WMI);
-			htc_dec_wmi_runtime_cnt(target, HIF_RTPM_ID_WMI);
+			rtpm_code = htc_send_pkts_get_rtpm_id(
+							pEndpoint->service_id);
+			hif_rtpm_put(HIF_RTPM_PUT_ASYNC, rtpm_code);
+			htc_dec_wmi_runtime_cnt(target, rtpm_code);
 		}
 
 
@@ -2824,7 +2827,11 @@ void htc_kick_queues(void *context)
 			endpoint->EpCallBacks.ep_resume_tx_queue(
 					endpoint->EpCallBacks.pContext);
 
-		htc_try_send(target, endpoint, NULL);
+		if (endpoint->service_id == HTT_DATA_MSG_SVC) {
+			htc_send_data_pkt((HTC_HANDLE )target, NULL, 0);
+		} else {
+			htc_try_send(target, endpoint, NULL);
+		}
 	}
 
 	hif_fastpath_resume(target->hif_dev);
