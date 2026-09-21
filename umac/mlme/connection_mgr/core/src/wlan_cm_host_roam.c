@@ -27,7 +27,8 @@
 #ifdef WLAN_POLICY_MGR_ENABLE
 #include "wlan_policy_mgr_api.h"
 #endif
-
+#include "wlan_mlme_vdev_mgr_interface.h"
+#include "wlan_cm_roam_api.h"
 static void
 cm_fill_roam_fail_resp_from_cm_id(struct cnx_mgr *cm_ctx,
 				  struct wlan_cm_connect_resp *resp,
@@ -353,8 +354,17 @@ QDF_STATUS cm_host_roam_start_req(struct cnx_mgr *cm_ctx,
 	}
 
 	status = cm_host_roam_start(cm_ctx, cm_req);
-	if (QDF_IS_STATUS_SUCCESS(status))
+	if (status == QDF_STATUS_E_EMPTY &&
+	    mlme_get_roam_reason_invalid_bmiss(cm_ctx->vdev)) {
+		mlme_debug("no candidate found for bmiss roam, send deauth");
+		reason = CM_NO_CANDIDATE_FOUND;
+		wlan_cm_send_beacon_miss(cm_req->roam_req.req.vdev_id,
+					 mlme_get_hb_ap_rssi(cm_ctx->vdev));
+		goto roam_err;
+
+	} else if (QDF_IS_STATUS_SUCCESS(status)) {
 		return status;
+	}
 
 roam_err:
 	return cm_host_roam_start_fail(cm_ctx, cm_req, reason);
