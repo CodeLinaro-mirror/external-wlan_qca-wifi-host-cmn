@@ -324,6 +324,14 @@ QDF_STATUS hif_disable_func(struct hif_sdio_dev *device,
 	qdf_spin_unlock_irqrestore(&device->rx_q_lock);
 
 	qdf_spinlock_destroy(&device->rx_q_lock);
+
+	/* Flush and destroy the dl_rx workqueue, then free any pending items */
+	if (device->dl_rx_wq) {
+		qdf_flush_workqueue(0, device->dl_rx_wq);
+		qdf_destroy_workqueue(0, device->dl_rx_wq);
+		device->dl_rx_wq = NULL;
+	}
+	qdf_spinlock_destroy(&device->dl_rx_work_lock);
 #endif
 
 	status = hif_sdio_func_disable(device, func, reset);
@@ -369,6 +377,16 @@ QDF_STATUS hif_enable_func(struct hif_softc *ol_sc, struct hif_sdio_dev *device,
 		device->rx_q_alloc_work_scheduled = true;
 		qdf_sched_work(0, &device->rx_q_alloc_work);
 		device->is_disabled = false;
+
+		qdf_spinlock_create(&device->dl_rx_work_lock);
+		qdf_nbuf_queue_init(&device->dl_rx_pkts);
+		device->dl_rx_wq = qdf_create_workqueue("hif_dl_rx_wq");
+		if (!device->dl_rx_wq) {
+			hif_err("Failed to create dl_rx workqueue");
+			return QDF_STATUS_E_NOMEM;
+		}
+		qdf_create_work(0, &device->dl_rx_work,
+				hif_sdio_dl_rx_work_handler, (void *)device);
 	}
 #endif
 	return ret;
@@ -792,6 +810,37 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 uint16_t g_dbg_payload_len;
 
 /**
+ * hif_sdio_dl_rx_work_handler() - Workqueue handler for deferred raw_nbuf free
+ * @ctx: Pointer to hif_sdio_dev
+ *
+ * Frees the original DMA raw_nbufs queued by dl_xfer_cb.
+ *
+ * Return: None
+ */
+void hif_sdio_dl_rx_work_handler(void *ctx)
+{
+	struct hif_sdio_dev *dev = (struct hif_sdio_dev *)ctx;
+	struct hif_sdio_device *device;
+	QDF_STATUS (*rx_completion)(void *, qdf_nbuf_t, uint8_t);
+	qdf_nbuf_queue_t rx_pkts;
+
+	qdf_nbuf_queue_init(&rx_pkts);
+
+	qdf_spin_lock(&dev->dl_rx_work_lock);
+	qdf_nbuf_queue_append(&rx_pkts, &dev->dl_rx_pkts);
+	qdf_nbuf_queue_init(&dev->dl_rx_pkts);
+	qdf_spin_unlock(&dev->dl_rx_work_lock);
+
+	device = (struct hif_sdio_device *)dev->htc_context;
+	if (device) {
+		rx_completion = device->hif_callbacks.rxCompletionHandler;
+		while (!qdf_nbuf_is_queue_empty(&rx_pkts))
+			rx_completion(device->hif_callbacks.Context,
+				      qdf_nbuf_queue_remove(&rx_pkts), 0);
+	}
+}
+
+/**
  * dl_xfer_cb() - Call from lower layer after transfer is completed
  * @ch_handle: The sdio al channel handle
  * @result: The xfer result
@@ -808,9 +857,10 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 	uint32_t len;
 	uint16_t payload_len = 0;
 	struct hif_sdio_dev *dev;
-	struct hif_sdio_device *device;
 	struct bus_request *bus_req = (struct bus_request *)ctx;
-	QDF_STATUS (*rx_completion)(void *, qdf_nbuf_t, uint8_t);
+	qdf_nbuf_queue_t rx_pkts;
+
+	qdf_nbuf_queue_init(&rx_pkts);
 
 	if (!bus_req) {
 		hif_err("Bus Req NULL!!!");
@@ -829,17 +879,6 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		hif_err("ASYNC Rx failed %d", result->xfer_status);
 		goto func_exit;
 	}
-	/**
-	 * During device teardown (hif_stop → hif_dev_destroy), the HTC context
-	 * (dev->htc_context) is explicitly set to NULL,
-	 * However, there may still be pending SDIO completion callbacks running
-	 */
-	device = (struct hif_sdio_device *)dev->htc_context;
-	if (!device) {
-		hif_err("%s: device is NULL, skip callback", __func__);
-		goto func_exit;
-	}
-	rx_completion = device->hif_callbacks.rxCompletionHandler;
 
 	buf = (unsigned char *)result->buf_addr;
 	len = (unsigned int)result->xfer_len;
@@ -889,11 +928,9 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 
 		qdf_mem_copy((uint8_t *)qdf_nbuf_data(nbuf), buf,
 			     payload_len + HTC_HEADER_LEN);
-
 		qdf_nbuf_put_tail(nbuf, payload_len + HTC_HDR_LENGTH);
 
-		rx_completion(device->hif_callbacks.Context, nbuf,
-			      0); /* don't care, not used */
+		qdf_nbuf_queue_add(&rx_pkts, nbuf);
 
 		/* No bundle in the WMI message */
 		if (ch_handle->channel_id == QCN_SDIO_CH_1)
@@ -909,6 +946,13 @@ void dl_xfer_cb(struct sdio_al_channel_handle *ch_handle,
 		len -= payload_len + HTC_HDR_LENGTH;
 		buf += payload_len + HTC_HDR_LENGTH;
 	}
+
+	qdf_spin_lock(&dev->dl_rx_work_lock);
+	qdf_nbuf_queue_append(&dev->dl_rx_pkts, &rx_pkts);
+	qdf_spin_unlock(&dev->dl_rx_work_lock);
+
+	qdf_sched_work(0, &dev->dl_rx_work);
+
 func_exit:
 	qdf_nbuf_free((qdf_nbuf_t)bus_req->context);
 	hif_free_bus_request(dev, bus_req);

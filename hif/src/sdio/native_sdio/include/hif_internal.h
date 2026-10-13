@@ -219,6 +219,11 @@ struct hif_sdio_dev {
 	qdf_spinlock_t rx_q_lock;
 	qdf_work_t rx_q_alloc_work;
 	bool rx_q_alloc_work_scheduled;
+	/* workqueue for deferred rx_completion */
+	qdf_workqueue_t *dl_rx_wq;
+	qdf_work_t dl_rx_work;
+	qdf_spinlock_t dl_rx_work_lock;
+	qdf_nbuf_queue_t dl_rx_pkts;
 #endif
 };
 

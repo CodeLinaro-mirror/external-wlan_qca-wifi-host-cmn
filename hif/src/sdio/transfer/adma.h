@@ -63,4 +63,5 @@ void dl_data_avail_cb(struct sdio_al_channel_handle *ch_handle,
 		      unsigned int len);
 
 void hif_sdio_rx_q_alloc(void *ctx);
+void hif_sdio_dl_rx_work_handler(void *ctx);
 #endif
