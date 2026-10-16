@@ -367,6 +367,8 @@ struct ol_tx_sched_wrr_ac_specs_t {
  * @enable_data_stall_detection:
  * @enable_flow_steering:
  * @disable_intra_bss_fwd:
+ * @hl_tx_sched_no_htt_enable: enable HL TX scheduling without HTT
+ *                                        credit report
  * @bundle_timer_value:
  * @bundle_size:
  * @pktlog_buffer_size:
@@ -403,6 +405,7 @@ struct txrx_pdev_cfg_param_t {
 	uint32_t enable_data_stall_detection;
 	bool enable_flow_steering;
 	bool disable_intra_bss_fwd;
+	bool hl_tx_sched_no_htt_enable;
 
 #ifdef WLAN_SUPPORT_TXRX_HL_BUNDLE
 	uint16_t bundle_timer_value;
