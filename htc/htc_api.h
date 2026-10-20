@@ -898,6 +898,8 @@ do {                                                            \
 #endif
 void htc_get_control_endpoint_tx_host_credits(HTC_HANDLE HTCHandle,
 						int *credit);
+void htc_get_htt_endpoint_tx_host_credits(HTC_HANDLE HTCHandle,
+					  int *credit);
 void htc_dump_counter_info(HTC_HANDLE HTCHandle);
 void *htc_get_targetdef(HTC_HANDLE htc_handle);
 void htc_flush_htt_tx(HTC_HANDLE htc_handle);

@@ -112,6 +112,29 @@ void htc_get_control_endpoint_tx_host_credits(HTC_HANDLE HTCHandle,
 	UNLOCK_HTC_TX(target);
 }
 
+void htc_get_htt_endpoint_tx_host_credits(HTC_HANDLE HTCHandle, int *credits)
+{
+	HTC_TARGET *target = GET_HTC_TARGET_FROM_HANDLE(HTCHandle);
+	HTC_ENDPOINT *pEndpoint;
+	int i;
+
+	if (!credits || !target) {
+		AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("%s: invalid args", __func__));
+		return;
+	}
+
+	*credits = 0;
+	LOCK_HTC_TX(target);
+	for (i = 0; i < ENDPOINT_MAX; i++) {
+		pEndpoint = &target->endpoint[i];
+		if (pEndpoint->service_id == HTT_DATA_MSG_SVC) {
+			*credits = pEndpoint->TxCredits;
+			break;
+		}
+	}
+	UNLOCK_HTC_TX(target);
+}
+
 static inline void restore_tx_packet(HTC_TARGET *target, HTC_PACKET *pPacket)
 {
 	qdf_nbuf_t netbuf = GET_HTC_PACKET_NET_BUF_CONTEXT(pPacket);
@@ -1307,7 +1330,9 @@ static void get_htc_send_packets_credit_based(HTC_TARGET *target,
 
 			/* check if we need credits back from the target */
 			if (pEndpoint->TxCredits <=
-			    pEndpoint->TxCreditsPerMaxMsg) {
+			    pEndpoint->TxCreditsPerMaxMsg ||
+			    (pPacket->PktInfo.AsTx.Flags &
+			     HTC_TX_PACKET_FLAG_FORCE_CREDIT_UPDATE)) {
 				/* tell the target we need credits ASAP! */
 #ifdef DP_COLOGNE_HL
 				if (pEndpoint->service_id != HTT_DATA_MSG_SVC)

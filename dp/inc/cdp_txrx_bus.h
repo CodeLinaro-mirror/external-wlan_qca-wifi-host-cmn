@@ -115,4 +115,28 @@ static inline void cdp_process_target_suspend_req(ol_txrx_soc_handle soc,
 		return soc->ops->bus_ops->process_target_suspend_req(soc,
 								     pdev_id);
 }
+
+/**
+ * cdp_force_htt_credit_update() - Force fw to report htt tx credits
+ * @soc: data path soc handle
+ * @pdev_id: id of dp pdev handle
+ *
+ * Prompt firmware to report its outstanding HTT tx credits back to host,
+ * instead of waiting for them to be piggybacked on other traffic.
+ *
+ * Return: None
+ */
+static inline void cdp_force_htt_credit_update(ol_txrx_soc_handle soc,
+						uint8_t pdev_id)
+{
+	if (!soc || !soc->ops || !soc->ops->bus_ops) {
+		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_FATAL,
+			  "%s invalid instance", __func__);
+		return;
+	}
+
+	if (soc->ops->bus_ops->force_htt_credit_update)
+		return soc->ops->bus_ops->force_htt_credit_update(soc,
+								   pdev_id);
+}
 #endif /* _CDP_TXRX_BUS_H_ */

@@ -2513,6 +2513,7 @@ struct cdp_tx_delay_ops {
  * @bus_resume: handler for bus resume
  * @process_wow_ack_rsp: handler for wow ack response
  * @process_target_suspend_req: handler for target suspend request
+ * @force_htt_credit_update: handler to force fw to report htt tx credits
  */
 struct cdp_bus_ops {
 	QDF_STATUS (*bus_suspend)(struct cdp_soc_t *soc_hdl, uint8_t pdev_id);
@@ -2520,6 +2521,8 @@ struct cdp_bus_ops {
 	void (*process_wow_ack_rsp)(struct cdp_soc_t *soc_hdl, uint8_t pdev_id);
 	void (*process_target_suspend_req)(struct cdp_soc_t *soc_hdl,
 					   uint8_t pdev_id);
+	void (*force_htt_credit_update)(struct cdp_soc_t *soc_hdl,
+					uint8_t pdev_id);
 };
 #endif
 

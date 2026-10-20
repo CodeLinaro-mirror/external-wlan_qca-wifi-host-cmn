@@ -487,7 +487,7 @@ QDF_STATUS htc_rx_completion_handler(void *Context, qdf_nbuf_t netbuf,
 				reason_code = HTC_GET_FIELD(htc_msg,
 							    HTC_UNKNOWN_MSG,
 							    METADATA);
-				htc_credit_record(HTC_SUSPEND_ACK,
+				htc_credit_record(HTC_SUSPEND_NACK,
 					pEndpoint->TxCredits,
 					HTC_PACKET_QUEUE_DEPTH(
 					&pEndpoint->TxQueue));
