@@ -415,7 +415,7 @@ static qdf_nbuf_t hif_sdio_get_nbuf(struct hif_sdio_dev *dev, uint16_t buf_len)
 		elem = qdf_container_of(node, struct rx_q_entry, entry);
 		nbuf = elem->nbuf;
 	} else {
-		hif_err("no rx q elements");
+		hif_debug("no rx q elements");
 	}
 
 	if (q->count <= HIF_RX_Q_ALLOC_THRESHOLD &&
