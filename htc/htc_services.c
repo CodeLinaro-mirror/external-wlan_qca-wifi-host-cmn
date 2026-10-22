@@ -342,6 +342,7 @@ QDF_STATUS htc_connect_service(HTC_HANDLE HTCHandle,
 		pEndpoint->MaxTxQueueDepth = pConnectReq->MaxSendQueueDepth;
 		pEndpoint->MaxMsgLength = maxMsgSize;
 		pEndpoint->TxCredits = txAlloc;
+		pEndpoint->MaxTxCredits = 0;
 		pEndpoint->TxCreditSize = target->TargetCreditSize;
 		pEndpoint->TxCreditsPerMaxMsg =
 			maxMsgSize / target->TargetCreditSize;

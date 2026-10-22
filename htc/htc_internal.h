@@ -166,6 +166,7 @@ typedef struct _HTC_ENDPOINT {
 	int TxCreditSize;
 	/* credits required per max message (precalculated) */
 	int TxCreditsPerMaxMsg;
+	int MaxTxCredits;
 #ifdef HTC_EP_STAT_PROFILING
 	/* endpoint statistics */
 	struct htc_endpoint_stats endpoint_stats;
