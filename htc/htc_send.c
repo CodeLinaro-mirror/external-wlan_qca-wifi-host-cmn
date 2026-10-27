@@ -2874,12 +2874,14 @@ void htc_flush_endpoint_tx(HTC_TARGET *target, HTC_ENDPOINT *pEndpoint,
 	LOCK_HTC_TX(target);
 	while (HTC_PACKET_QUEUE_DEPTH(&pEndpoint->TxQueue)) {
 		pPacket = htc_packet_dequeue(&pEndpoint->TxQueue);
+		UNLOCK_HTC_TX(target);
 
 		if (pPacket) {
 			/* let the sender know the packet was not delivered */
 			pPacket->Status = QDF_STATUS_E_CANCELED;
 			send_packet_completion(target, pPacket);
 		}
+		LOCK_HTC_TX(target);
 	}
 	UNLOCK_HTC_TX(target);
 }
@@ -2900,6 +2902,7 @@ void htc_flush_endpoint_txlookupQ(HTC_TARGET *target,
 	LOCK_HTC_TX(target);
 	while (HTC_PACKET_QUEUE_DEPTH(&endpoint->TxLookupQueue)) {
 		packet = htc_packet_dequeue(&endpoint->TxLookupQueue);
+		UNLOCK_HTC_TX(target);
 
 		if (packet) {
 			if (call_ep_callback == true) {
@@ -2909,6 +2912,7 @@ void htc_flush_endpoint_txlookupQ(HTC_TARGET *target,
 				qdf_mem_free(packet);
 			}
 		}
+		LOCK_HTC_TX(target);
 	}
 	UNLOCK_HTC_TX(target);
 }
