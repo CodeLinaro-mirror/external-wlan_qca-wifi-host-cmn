@@ -882,7 +882,10 @@ static int __hif_pm_runtime_allow_suspend(struct hif_pm_runtime_lock *lock)
 
 int hif_pm_runtime_prevent_suspend(struct hif_pm_runtime_lock *lock)
 {
-	if (!hif_rtpm_enabled() || !lock)
+	if (!hif_rtpm_enabled())
+		return 0;
+
+	if (!lock)
 		return -EINVAL;
 
 	if (in_irq())
